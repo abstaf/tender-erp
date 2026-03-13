@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Submitted Tenders</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+body{
+  font-family:'Baloo Bhai 2';
+  background:#eef2f7;
+  margin:0;
+}
+
+.container{
+  width:97%;
+  margin:20px auto;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+
+.header h2{
+  margin:0;
+}
+
+.home-btn{
+  background:#28a745;
+  color:white;
+  border:none;
+  padding:8px 14px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+thead th{
+  background:#1b4a6b;
+  color:white;
+  padding:10px;
+  text-align:center;
+}
+
+td{
+  padding:8px;
+  border-bottom:2px solid #000;
+  border-left:1px solid #ccc;
+}
+
+tbody tr:hover{
+  background:#f1f6ff;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<button class="home-btn" onclick="window.location='index.html'">
+🏠 Dashboard
+</button>
+
+<h2>📋 Submitted Tenders</h2>
+
+</div>
+
+
+<table>
+
+<thead>
+<tr>
+
+<th>Sr No</th>
+<th>Tender No / ID</th>
+<th>Work Type</th>
+<th>Name of Work</th>
+<th>Last Date</th>
+<th>Estimated Amount</th>
+<th>Number Of Location</th>
+<th>Time Limit</th>
+<th>Fee</th>
+<th>EMD</th>
+<th>Submission ID</th>
+
+</tr>
+</thead>
+
+<tbody id="submittedTable"></tbody>
+
+</table>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
+
+
+
+
+const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+
+async function loadSubmittedTenders(){
+
+  const { data, error } = await client
+  .from("tenders")
+  .select("*")
+  .not("submission_id","is",null)
+  .order("id",{ascending:true});
+
+  const table = document.getElementById("submittedTable");
+
+  table.innerHTML = "";
+
+  let i = 1;
+
+  data.forEach(row => {
+
+    table.innerHTML += `
+
+<tr>
+
+<td>${i++}</td>
+
+<td>
+${row.tender_notice_no || ""}
+</td>
+
+<td>
+${row.work_type || ""}
+</td>
+
+<td>
+${row.name_of_work || ""}
+</td>
+
+<td>
+${row.last_date || ""}
+</td>
+
+<td>
+₹ ${row.estimate_amount || ""}
+</td>
+
+<td>
+${row.work_location || ""}
+</td>
+
+<td>
+${row.time_limit || ""}
+</td>
+
+<td>
+₹ ${row.fee_amount || ""}
+</td>
+
+<td>
+₹ ${row.emd_amount || ""}
+</td>
+
+<td>
+${row.submission_id || ""}
+</td>
+
+</tr>
+
+`;
+
+  });
+
+}
+
+loadSubmittedTenders();
+
+</script>
+
+</body>
+</html>

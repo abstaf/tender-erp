@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tender Entry Form</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+ font-family: 'Baloo Bhai 2';
+    background: linear-gradient(to right,#e8f0ff,#f4f7fb);
+    margin:0;
+    
+  text-align: justify;
+
+}
+
+.container{
+    width: 95%;
+    max-width: 1050px;
+    margin: 18px auto;
+    background: #fff;
+    padding: 18px 22px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+}
+
+h2{
+    text-align:center;
+    font-size:20px;
+    margin-bottom:15px;
+    color:#1e3a8a;
+}
+
+.section-title{
+    font-size:14px;
+    font-weight:600;
+    margin:12px 0 6px;
+    color:#2563eb;
+    border-bottom:1px solid #e5e7eb;
+    padding-bottom:4px;
+}
+
+.form-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+}
+
+.form-group{
+    flex:1;
+    min-width:180px;
+    display:flex;
+    flex-direction:column;
+}
+
+label{
+    font-size:12px;
+    font-weight:600;
+    margin-bottom:3px;
+    color:#374151;
+}
+
+input, select{
+    padding:7px 8px;
+    border-radius:5px;
+    border:1px solid #d1d5db;
+    font-size:12.5px;
+    background:#f9fafb;
+    transition:0.2s;
+}
+
+input:focus, select:focus{
+    outline:none;
+    border-color:#2563eb;
+    background:white;
+}
+
+.full-width{
+    width:100%;
+}
+
+.file-box{
+    background:#f3f4f6;
+    padding:6px;
+    border-radius:6px;
+    border:1px dashed #cbd5e1;
+}
+
+button{
+    width:100%;
+    padding:10px;
+    margin-top:12px;
+    border:none;
+    border-radius:6px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    background:linear-gradient(to right,#2563eb,#1e40af);
+    color:white;
+    transition:0.2s;
+}
+
+button:hover{
+    transform:translateY(-1px);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>📄 Tender Entry Form</h2>
+
+<form id="tenderForm" enctype="multipart/form-data">
+<div class="form-row">
+
+  <div class="form-group">
+    <label>Department Name</label>
+    <input type="text" name="departmentName" required>
+  </div>
+
+  <div class="form-group">
+    <label>Tender Notice No</label>
+    <input type="text" name="tenderNoticeNo" required>
+  </div>
+
+  <div class="form-group">
+    <label>Tender ID</label>
+    <input type="text" name="tenderId" required>
+  </div>
+
+  <div class="form-group">
+   <label>Work Type</label>
+
+<select name="workType" id="workType" required>
+<option value="">Select Work Type</option>
+</select>
+
+
+</div>
+   
+
+</div>
+
+<div class="form-group full-width">
+    <label>Name of Work</label>
+    <input type="text" name="nameOfWork" required>
+</div>
+
+<div class="form-row">
+    <div class="form-group">
+        <label>Estimate Amount (₹)</label>
+        <input type="number" name="estimateAmount">
+    </div>
+    <div class="form-group">
+        <label>Number of Work Location</label>
+        <input type="number" name="workLocation">
+    </div>
+    <div class="form-group">
+        <label>Time Limit</label>
+        <input type="text" name="timeLimit">
+    </div>
+</div>
+
+
+
+
+<div class="form-row">
+    <div class="form-group">
+           <label>Fee Amount</label>
+        <input type="number" name="feeAmount">
+    </div>
+    <div class="form-group">
+           <label>EMD Amount</label>
+        <input type="number" name="emdAmount">
+    </div>
+</div>
+
+<div class="form-row">
+   
+  <div class="form-group">
+<label>Last Date</label>
+<input 
+  type="text"
+  id="last_date"
+  name="lastdate"
+  placeholder="DD-Mon-YYYY (e.g., 07-Feb-2012)">
+</div>
+</div>
+
+<div class="section-title">Upload Documents</div>
+
+<div class="form-row">
+  <div class="form-group file-box">
+    <label>Tender NIT</label>
+    <input type="file" name="tenderNIT">
+  </div>
+<div class="form-group file-box">
+  <label>Estimate Sheet</label>
+  <input type="file" name="estimantlink">
+</div>
+
+  <div class="form-group file-box">
+    <label>Tender Calculation Sheet</label>
+    <input type="file" name="tenderCalculation">
+  </div>
+
+  <div class="form-group file-box">
+    <label>Other Document</label>
+    <input type="file" name="otherDocument">
+  </div>
+</div>
+
+<button id="submitBtn" type="submit">Submit Tender</button>
+  
+</form>
+</div>
+
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+const editId = params.get("id");
+
+const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
+
+  const client = window.supabase.createClient(supabaseUrl, supabaseKey);
+document.getElementById("tenderForm").addEventListener("submit", async function(e){
+
+    e.preventDefault();
+    const form = e.target;
+
+    try {
+
+        const folder = "tender_" + Date.now();
+async function uploadFile(fileInput, fileLabel) {
+
+   if(!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+
+    const file = fileInput.files[0];
+
+    // 🔥 Clean filename (remove spaces & special chars)
+    const cleanName = file.name
+        .replace(/\s+/g, "_")
+        .replace(/[^\w.-]/g, "");
+
+    // 🔥 Always unique path
+    const filePath = `tender_${Date.now()}/${fileLabel}_${cleanName}`;
+
+    const { error } = await client.storage
+        .from("tender-files")
+        .upload(filePath, file, {
+            upsert: true   // 🔥 overwrite allowed
+        });
+
+    if(error){
+        console.error("Upload error:", error);
+        throw error;
+    }
+
+    return filePath;
+}
+
+        const nitPath = await uploadFile(form.tenderNIT, "nit");
+        const estimatePath = await uploadFile(form.estimateDocument, "estimate");
+        const calculationPath = await uploadFile(form.tenderCalculation, "calculation");
+        const otherPath = await uploadFile(form.otherDocument, "other");
+  let lastDateInput = document.getElementById("last_date").value;
+         let lastDateDB = convertToDBDate(lastDateInput);
+
+        const tenderData = {
+            tender_notice_no: form.tenderNoticeNo.value,
+            tender_id: form.tenderId.value,
+            work_type: form.workType.value,
+            name_of_work: form.nameOfWork.value,
+            estimate_amount: form.estimateAmount.value,
+            work_location: form.workLocation.value,
+            time_limit: form.timeLimit.value,
+           fee_amount: form.feeAmount.value,
+             emd_amount: form.emdAmount.value,
+            tender_estimant_link: form.estimantlink.value || null,
+          last_date: lastDateDB,
+          department_name: form.departmentName.value,
+        };
+
+        // 🔥 If new files uploaded, add to object
+        if(nitPath) tenderData.tender_nit = nitPath;
+        
+        if(calculationPath) tenderData.tender_calculation = calculationPath;
+        if(otherPath) tenderData.other_document = otherPath;
+
+        let response;
+if(editId){
+    response = await client
+        .from("tenders")
+        .update(tenderData)
+        .eq("id", editId);
+
+    if(response.error) throw response.error;
+
+    // ✅ Update hone ke baad direct list page pe bhejo
+  window.location.href = "/tenders_list.html";
+}
+        else {
+            response = await client
+                .from("tenders")
+                .insert([tenderData]);
+
+            alert("Tender Saved Successfully!");
+        }
+
+        if(response.error) throw response.error;
+
+        form.reset();
+    window.location.href = "/tenders_list.html"; // optional redirect
+
+    } catch(err){
+        console.error(err);
+        alert("Error: " + err.message);
+    }
+
+});
+async function loadTenderForEdit() {
+
+  if(!editId) return;
+
+  const { data, error } = await client
+    .from("tenders")
+    .select("*")
+    .eq("id", editId)
+    .single();
+
+  if(error){
+    alert("Tender not found");
+    return;
+  }
+
+  const form = document.getElementById("tenderForm");
+
+  form.tenderNoticeNo.value = data.tender_notice_no || "";
+  form.tenderId.value = data.tender_id || "";
+await loadWorkTypes();
+form.workType.value = data.work_type || "";
+  form.nameOfWork.value = data.name_of_work || "";
+  form.estimateAmount.value = data.estimate_amount || "";
+  form.workLocation.value = data.work_location || "";
+  form.timeLimit.value = data.time_limit || "";
+
+  form.feeAmount.value = data.fee_amount || "";
+  
+  form.emdAmount.value = data.emd_amount || "";
+  form.estimantlink.value = data.tender_estimant_link || "";
+  form.departmentName.value=data.department_name ||"";
+
+  /* 🔹 Convert DB date → DD-Mon-YYYY */
+  if(data.last_date){
+
+    const d = new Date(data.last_date);
+
+    const months = [
+      "Jan","Feb","Mar","Apr","May","Jun",
+      "Jul","Aug","Sep","Oct","Nov","Dec"
+    ];
+
+    const formatted =
+      String(d.getDate()).padStart(2,'0') + "-" +
+      months[d.getMonth()] + "-" +
+      d.getFullYear();
+
+    document.getElementById("last_date").value = formatted;
+  }
+
+  
+
+  document.getElementById("submitBtn").innerText = "Update Tender";
+}
+
+loadTenderForEdit();
+
+
+const select = document.getElementById("workType");
+
+
+select.addEventListener("change", function(){
+
+if(this.value === "add_new"){
+input.style.display = "block";
+input.focus();
+}else{
+input.style.display = "none";
+}
+
+});
+
+
+function convertToDBDate(dateStr){
+
+if(!dateStr) return null;
+
+const months = {
+jan:"01", feb:"02", mar:"03", apr:"04",
+may:"05", jun:"06", jul:"07", aug:"08",
+sep:"09", oct:"10", nov:"11", dec:"12"
+};
+
+const parts = dateStr.split("-");
+
+if(parts.length !== 3){
+alert("Date format must be DD-Mon-YYYY");
+return null;
+}
+
+const day = parts[0];
+const monthText = parts[1].toLowerCase();
+const year = parts[2];
+
+const month = months[monthText];
+
+if(!month){
+alert("Invalid month. Use format like 07-Feb-2026");
+return null;
+}
+
+return `${year}-${month}-${day}`;
+}
+async function loadWorkTypes(){
+
+const { data, error } = await client
+.from("work_type")
+.select("*")
+.order("work_name",{ascending:true});
+
+if(error){
+console.error(error);
+return;
+}
+
+const select = document.getElementById("workType");
+
+select.innerHTML = `<option value="">Select Work Type</option>`;
+
+data.forEach(row=>{
+select.innerHTML += `<option value="${row.work_name}">${row.work_name}</option>`;
+});
+
+select.innerHTML += `<option value="add_new">Add New Work Type...</option>`;
+
+}
+
+loadWorkTypes();
+
+document.getElementById("workType").addEventListener("change", async function(){
+
+if(this.value === "add_new"){
+
+let newType = prompt("Enter New Work Type");
+
+if(newType){
+
+const { error } = await client
+.from("work_type")
+.insert([{ work_name:newType }]);
+
+if(error){
+alert(error.message);
+return;
+}
+
+await loadWorkTypes();
+
+setTimeout(()=>{
+document.getElementById("workType").value = newType;
+},200);
+
+}
+
+}
+
+});
+</script>
+</body>
+</html>

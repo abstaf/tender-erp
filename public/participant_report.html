@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tender Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{
+font-family:Segoe UI, Arial;
+background:#eef2f6;
+margin:0;
+padding:20px;
+}
+
+.container{
+background:#fff;
+padding:18px 20px;
+border-radius:8px;
+box-shadow:0 3px 10px rgba(68, 57, 57, 0.08);
+max-width:900px;
+margin:auto;
+}
+
+h2{
+font-size:20px;
+margin-bottom:12px;
+}
+
+select{
+padding:6px 10px;
+font-size:13px;
+border-radius:5px;
+border:1px solid #ccc;
+margin-bottom:12px;
+}
+
+canvas{
+background:#f8f9fc;
+border-radius:6px;
+padding:10px;
+}
+
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>📊 Tender Work Analysis</h2>
+
+<select id="workType" onchange="loadChart()">
+<option value="ALL">All Work</option>
+</select>
+<div id="loading">Loading chart...</div>
+<canvas id="chart" style="display:none;"></canvas>
+</div>
+
+<script>
+
+const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
+
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+let chart;
+
+async function loadChart(){
+
+let workType = document.getElementById("workType").value;
+
+let {data,error} = await supabaseClient
+.from("tender_result")
+.select("*")
+.eq("rank","L1");
+
+if(error){
+console.log(error);
+return;
+}
+
+// WORK TYPE FILTER
+if(workType!="ALL"){
+data=data.filter(row=>row.work_type===workType);
+}
+
+let companyData={};
+
+data.forEach(row=>{
+
+let company=row.company_name;
+let amount=Number(row.final_amount)||0;
+let percent=Number(row.bid_price)||0;
+
+if(!companyData[company]){
+companyData[company]={
+amount:0,
+count:0,
+percentTotal:0,
+latestPercent:percent
+};
+}
+
+companyData[company].amount+=amount;
+companyData[company].count+=1;
+companyData[company].percentTotal+=percent;
+
+// latest %
+companyData[company].latestPercent=percent;
+
+});
+
+let labels=[];
+let amounts=[];
+let info=[];
+
+for(let c in companyData){
+
+let count=companyData[c].count;
+let avg=(companyData[c].percentTotal/count).toFixed(0);
+let latest=companyData[c].latestPercent;
+
+labels.push(c);
+amounts.push(companyData[c].amount);
+
+info.push(
+"Work: "+count+
+"\nAvg: "+avg+"%"+
+"\nLatest: "+latest+"%"
+);
+
+}
+
+if(chart){
+chart.destroy();
+}
+
+Chart.register({
+id: 'countLabel',
+afterDatasetsDraw(chart) {
+
+const {ctx} = chart;
+
+chart.data.datasets[0].data.forEach((value,index)=>{
+
+const meta = chart.getDatasetMeta(0).data[index];
+
+ctx.save();
+ctx.fillStyle = "black";
+ctx.font = "bold 14px Arial";
+ctx.textAlign = "center";
+
+let text = chart.config.data.info[index];
+
+let lines = text.split("\n");
+
+lines.forEach((line,i)=>{
+ctx.fillText(line, meta.x, meta.y - 60 + (i*18));
+});
+
+});
+
+}
+});
+
+chart=new Chart(document.getElementById("chart"),{
+   
+
+
+type:"bar",
+
+data:{
+labels:labels,
+info: info,
+datasets:[{
+data:amounts,
+backgroundColor:"#4e79d9",
+borderRadius:10,
+barThickness:60,
+maxBarThickness:60
+}]
+},
+
+options: {
+  responsive: true,
+  layout: {
+    padding: { top: 50 }
+  },
+  plugins: {
+    legend: { display: false }
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      grace: '20%'
+    }
+  }
+}
+});
+ document.getElementById("loading").style.display="none"
+document.getElementById("chart").style.display="block"
+
+}
+async function loadWorkTypes(){
+
+let {data,error} = await supabaseClient
+.from("work_type")   // table name
+.select("work_name");
+
+if(error){
+console.log(error);
+return;
+}
+
+let dropdown=document.getElementById("workType");
+
+data.forEach(row=>{
+
+let option=document.createElement("option");
+option.value=row.work_name;
+option.textContent=row.work_name;
+
+dropdown.appendChild(option);
+
+});
+
+}
+loadWorkTypes();
+loadChart();
+
+</script>
+</body>
+</html>

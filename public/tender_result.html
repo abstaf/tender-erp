@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Tender Result</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#eef2f7;
+padding:40px;
+}
+
+.result-container{
+width:1100px;
+margin:auto;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th{
+background:#1b4a6b;
+color:white;
+padding:12px;
+}
+
+td{
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+.result-row{
+display:flex;
+gap:8px;
+align-items:center;
+}
+
+.rank{
+width:30px;
+font-weight:bold;
+}
+
+.company-select{
+width:200px;
+padding:6px;
+}
+
+.type{
+width:80px;
+padding:6px;
+}
+
+.premium-input{
+width:70px;
+padding:6px;
+}
+
+.add-btn{
+background:#ff7a00;
+border:none;
+color:white;
+width:30px;
+height:30px;
+cursor:pointer;
+border-radius:5px;
+}
+
+.save-btn{
+background:#1b4a6b;
+color:white;
+border:none;
+padding:6px 12px;
+cursor:pointer;
+}
+
+.final-box{
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+.premium-input.above{
+color:green;
+font-weight:bold;
+}
+
+.premium-input.below{
+color:red;
+font-weight:bold;
+}
+
+.premium-input.equal{
+color:black;
+font-weight:bold;
+}
+.above{
+color:green;
+font-weight:bold;
+}
+
+.below{
+color:red;
+font-weight:bold;
+}
+
+.equal{
+color:#333;
+font-weight:bold;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="result-container">
+
+<h2>📊 Tender Result</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Tender ID</th>
+<th>Result</th>
+<th>Time LIMIT</th>
+<th>WORK TYPE</th>
+<th>Estimate</th>
+<th>Final</th>
+
+<th>Save</th>
+</tr>
+</thead>
+
+<tbody id="resultTable"></tbody>
+
+</table>
+
+</div>
+
+<script>
+const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
+
+const client = supabase.createClient(supabaseUrl,supabaseKey);
+
+
+let companies=[]
+
+
+async function loadCompanies(){
+
+const {data}=await client
+.from("company_list")
+.select("company_name")
+.order("company_name")
+
+companies=data.map(c=>c.company_name)
+
+}
+
+function companyOptions(){
+
+let html=`<option value="">Select</option>`
+
+companies.forEach(c=>{
+html+=`<option value="${c}">${c}</option>`
+})
+
+html+=`<option value="other">Add New</option>`
+
+return html
+
+}
+
+
+
+async function loadResults(){
+
+const {data}=await client
+.from("tenders")
+.select("*")
+.not("submission_id","is",null)
+
+const table=document.getElementById("resultTable")
+
+table.innerHTML=""
+
+data.forEach(row=>{
+
+table.innerHTML+=`
+
+<tr>
+
+<td>${row.tender_id}</td>
+
+<td>
+
+<div id="resultBox_${row.tender_id}">
+
+<div class="result-row">
+
+<span class="rank">L1</span>
+
+<select class="company-select">
+${companyOptions()}
+</select>
+
+<select class="type" onchange="calculateFinal(${row.tender_id})">
+<option value="above">Above</option>
+<option value="below">Below</option>
+<option value="equal">Equal</option>
+</select>
+
+<input class="premium-input"
+placeholder="%"
+oninput="calculateFinal(${row.tender_id})">
+
+<button class="add-btn"
+onclick="addRank(${row.tender_id})">+</button>
+
+</div>
+
+</div>
+
+</td>
+
+<td>${row.time_limit||""}</td>
+<td>${row.work_type||""}</td>
+<td class="estimate"
+data-estimate="${row.estimate_amount}">
+₹ ${formatAmount(row.estimate_amount)}
+</td>
+
+<td>
+<div id="final_${row.tender_id}" class="final-box"></div>
+</td>
+
+<td>
+
+<button class="save-btn"
+onclick="saveResult(${row.tender_id})">
+Save
+</button>
+
+</td>
+
+</tr>
+
+`
+loadExistingResult(row.tender_id) 
+})
+
+}
+
+
+
+function addRank(id){
+
+const box=document.getElementById(`resultBox_${id}`)
+
+const rows=box.querySelectorAll(".result-row")
+
+rows.forEach(r=>{
+const btn=r.querySelector(".add-btn")
+if(btn) btn.remove()
+})
+
+const rank=rows.length+1
+
+const div=document.createElement("div")
+
+div.className="result-row"
+
+div.innerHTML=`
+
+<span class="rank">L${rank}</span>
+
+<select class="company-select">
+${companyOptions()}
+</select>
+
+<select class="type"
+onchange="calculateFinal(${id})">
+
+<option value="above">Above</option>
+<option value="below">Below</option>
+
+</select>
+
+<input class="premium-input"
+oninput="calculateFinal(${id})"
+placeholder="%">
+
+<button class="add-btn"
+onclick="addRank(${id})">+</button>
+
+`
+
+box.appendChild(div)
+
+}
+
+
+function calculateFinal(tenderId){
+
+const tr = document.querySelector(`#resultBox_${tenderId}`).closest("tr")
+
+const estimate =
+parseFloat(tr.querySelector(".estimate").dataset.estimate) || 0
+
+const rows = tr.querySelectorAll(".result-row")
+
+const finalBox = tr.querySelector(".final-box")
+
+finalBox.innerHTML = ""
+
+rows.forEach(r=>{
+
+const input = r.querySelector(".premium-input")
+
+let raw = input.value.replace(/[^\d.]/g,"")
+
+if(raw===""){
+return
+}
+
+let premium = parseFloat(raw)
+
+const type = r.querySelector(".type").value
+
+let final = estimate
+
+input.classList.remove("above","below","equal")
+
+// BELOW
+if(type==="below"){
+
+input.classList.add("below")
+
+if(premium>0){
+input.value = "-" + premium + "%"
+}
+
+final = estimate - (estimate * premium / 100)
+
+}
+
+// ABOVE
+else if(type==="above"){
+
+input.classList.add("above")
+
+if(premium>0){
+input.value = "+" + premium + "%"
+}
+
+final = estimate + (estimate * premium / 100)
+
+}
+
+// EQUAL
+else if(type==="equal"){
+
+input.classList.add("equal")
+
+input.value = "0%"
+
+premium = 0
+
+final = estimate
+
+}
+
+finalBox.innerHTML += `<div>₹ ${final.toFixed(2)}</div>`
+
+})
+
+}
+
+function formatAmount(a){
+
+return new Intl.NumberFormat("en-IN").format(a)
+
+}
+async function loadExistingResult(tenderId){
+
+const {data,error}=await client
+.from("tender_result")
+.select("*")
+.eq("tender_id",tenderId)
+.order("rank",{ascending:true})
+
+if(error){
+console.log(error)
+return
+}
+
+if(!data || data.length===0) return
+
+const box=document.getElementById(`resultBox_${tenderId}`)
+
+box.innerHTML=""
+
+data.forEach((row,index)=>{
+
+const isLast=index===data.length-1
+
+const div=document.createElement("div")
+
+div.className="result-row"
+
+div.innerHTML=`
+
+<span class="rank">${row.rank}</span>
+
+<select class="company-select">
+${companyOptions()}
+</select>
+
+<select class="type"
+onchange="calculateFinal(${tenderId})">
+
+<option value="above">Above</option>
+<option value="below">Below</option>
+
+</select>
+
+<input class="premium-input"
+value="${row.bid_price}"
+oninput="calculateFinal(${tenderId})"
+placeholder="%">
+
+${isLast?`<button class="add-btn" onclick="addRank(${tenderId})">+</button>`:""}
+
+`
+
+box.appendChild(div)
+
+/* company select set */
+div.querySelector(".company-select").value=row.company_name
+
+/* type set */
+div.querySelector(".type").value=row.above_below
+
+})
+
+calculateFinal(tenderId)
+
+}
+
+
+async function saveResult(tenderId){
+
+const box=document.getElementById(`resultBox_${tenderId}`)
+const rows=box.querySelectorAll(".result-row")
+
+const tr = box.closest("tr")
+
+const estimate =
+parseFloat(tr.querySelector(".estimate").dataset.estimate) || 0
+
+const time_limit = tr.children[2].innerText
+const work_type = tr.children[3].innerText
+
+await client
+.from("tender_result")
+.delete()
+.eq("tender_id",tenderId)
+
+let l1Company=null
+
+for(let i=0;i<rows.length;i++){
+
+const company=
+rows[i].querySelector(".company-select").value
+
+const type=
+rows[i].querySelector(".type").value
+
+let premium=
+rows[i].querySelector(".premium-input").value
+
+premium=premium.replace(/[%+=-]/g,"")
+
+let premiumNum=parseFloat(premium)||0
+
+let final=estimate
+
+if(type==="below"){
+final = estimate - (estimate * premiumNum / 100)
+}
+
+if(type==="above"){
+final = estimate + (estimate * premiumNum / 100)
+}
+
+if(type==="equal"){
+final = estimate
+}
+
+if(!company) continue
+
+if(i===0){
+l1Company=company
+}
+
+await client
+.from("tender_result")
+.insert({
+
+tender_id:tenderId,
+company_name:company,
+rank:`L${i+1}`,
+bid_price:premium,
+above_below:type,
+
+estimate_amount:estimate,
+final_amount:final,
+time_limit:time_limit,
+work_type:work_type
+
+})
+
+}
+
+if(l1Company && l1Company.toUpperCase().trim()==="ANIRAJ BUILDERS"){
+
+await client
+.from("tender_awarded")
+.delete()
+.eq("tender_id",tenderId)
+
+await client
+.from("tender_awarded")
+.insert({
+
+tender_id:tenderId,
+company_name:l1Company
+
+})
+
+}
+
+alert("Saved")
+
+}
+
+
+
+async function start(){
+
+await loadCompanies()
+
+await loadResults()
+
+}
+
+start()
+
+</script>
+
+</body>
+</html>

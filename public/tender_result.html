@@ -1,738 +1,446 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Tender Result</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<title>Tender Result</title>
+    <style>
+        :root {
+            --primary: #4f7fa3;
+            --bg: #f3f7fa;
+            --white: #ffffff;
+            --border: #cbd5e1;
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
+        body {
+            font-family: 'Baloo Bhai 2', cursive;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
 
-body{
-font-family:'Baloo Bhai 2', cursive;
-margin:0;
-padding:10px 20px;
-}
-.result-container{
-width:100%;
-padding:20px 40px;
-box-sizing:border-box;
-}
-td{
-font-weight:500;
-}
-h1{
-    margin:5px 0 10px 0;   /* sirf heading jitna hi space */
-text-align:center;
-font-size:22px;
-display:flex;
-justify-content:center;
-align-items:center;
-gap:10px;
-margin-bottom:15px;
-}
-/* normal rows */
-tbody tr{
-background:#e2edf5;
-}
+        .result-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
 
-/* alternate rows */
-tbody tr:nth-child(even){
-background:#cddeec;
-}
+       
 
-/* hover effect */
-tbody tr:hover{
-background:#b3d1e7;
-transition:0.2s;
-}
-*{
-font-family:'Baloo Bhai 2', cursive;
-}
-th{
-font-weight:600;
-}
-/* TABLE */
-th:nth-child(3),
-td:nth-child(3){
-width:300px;
-}
+        /* Table Styling */
+        .table-wrapper {
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
 
-th:nth-child(4),
-td:nth-child(4){
-width:120px;
-text-align:center;
-}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-th:nth-child(6),
-td:nth-child(6){
-width:100px;
-}
-th:nth-child(5),
-td:nth-child(5){
-width:0px;
-}
-th:nth-child(7),
-td:nth-child(7){
-width:120px;
-text-align:center;
-}
-table{
+        thead th {
+            background: var(--primary);
+            color: white;
+            padding: 15px 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
 
-width:100%;
-border-collapse:collapse;
-background:#ffffff;
-border-radius:8px;
-overflow:hidden;
-box-shadow:0 2px 8px rgba(0,0,0,0.06);
+        tbody tr {
+            border-bottom: 1px solid #eef2f6;
+            transition: 0.2s;
+        }
+
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        tbody tr:hover { background: #edf2f7; }
+
+        td {
+            padding: 15px 10px;
+            font-size: 14px;
+            vertical-align: middle;
+            text-align: center;
+        }
+/* Header styling to remove extra space and align items */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Button left mein aur Title center/right balance ke liye */
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
 }
 
-/* HEADER */
-
-th{
-background:#4f7fa3;
-color:white;
-padding:12px;
-font-weight:600;
-font-size:14px;
-text-align:center;
+h1 {
+    margin: 0 !important; /* Default margin hata diya */
+    font-size: 24px;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-/* ROW */
+.back-btn {
+    background: white;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    padding: 6px 14px; /* Thoda compact padding */
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+        /* Notice & Work Name styling */
+        .notice-cell { text-align: left; line-height: 1.3; min-width: 130px; }
+        .n-line1 { font-weight: 800; color: #000; display: block; }
+        .n-line2 { font-size: 12px; color: #64748b; display: block; }
+        .n-line3 { font-size: 12px; color: var(--primary); font-weight: 700; display: block; }
 
-td{
-padding:12px 10px;
-border-bottom:1px solid #eef2f6;
-font-size:14px;
-vertical-align:middle;
+        .work-name { 
+            text-align: justify; 
+            max-width: 300px; 
+            line-height: 1.4; 
+            font-size: 13.5px;
+            padding: 0 10px;
+        }
+
+        /* Result Input Row */
+        .result-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            background: #fff;
+            padding: 5px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .rank { width: 25px; font-weight: 700; color: #475569; }
+
+        .company-select, .type, .premium-input {
+            font-family: 'Baloo Bhai 2', cursive;
+            padding: 5px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .company-select { width: 180px; }
+        .type { width: 75px; }
+        .premium-input { width: 65px; text-align: center; font-weight: 700; }
+
+        /* Dynamic Colors */
+        .above { color: #10b981 !important; }
+        .below { color: #ef4444 !important; }
+        .equal { color: #64748b !important; }
+
+        /* Buttons */
+        .add-btn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .save-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .save-btn:hover { background: #3a5f7a; transform: translateY(-1px); }
+
+        /* Final Column */
+    /* Final Column Layout */
+.final-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* Result-row ke margin-bottom (6px) se match karein */
 }
 
-tr:hover{
-background:#f6f9fc;
-transition:0.2s;
+.final-item {
+    height: 40px; /* Result-row ki total height ke barabar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* RESULT ROW */
-.result-row{
-display:flex;
-align-items:center;
-gap:14px;   /* teeno boxes ke bich gap */
-margin-bottom:8px;
-}
-/* RANK */
-
-.rank{
-width:30px;
-font-weight:600;
-color:#333;
+.final-amount {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    color: #334155;
+    font-size: 13px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    min-width: 100px;
+    text-align: center;
 }
 
-/* COMPANY SELECT */
-
-.company-select{
-width:210px;
-padding:6px 8px;
-border:1px solid #d6dee6;
-border-radius:5px;
-background:#fafcfe;
-font-size:13px;
-}
-
-/* TYPE */
-
-.type{
-width:80px;
-padding:6px;
-border:1px solid #d6dee6;
-border-radius:5px;
-background:#fafcfe;
-}
-
-/* PREMIUM INPUT */
-
-.premium-input{
-width:70px;
-padding:6px;
-border:1px solid #d6dee6;
-border-radius:5px;
-text-align:center;
-font-size:13px;
-background:#fafcfe;
-}
-
-/* ADD BUTTON */
-
-.add-btn{
-background:#ff9f43;
-border:none;
-color:white;
-width:30px;
-height:30px;
-cursor:pointer;
-border-radius:6px;
-font-size:18px;
-}
-
-.add-btn:hover
-
-/* SAVE BUTTON */
-
-.save-btn{
-background:#4f7fa3;
-color:white;
-border:none;
-padding:7px 14px;
-cursor:pointer;
-border-radius:6px;
-font-size:13px;
-}
-
-.save-btn:hover
-
-/* FINAL BOX */
-
-.final-box div{
-display:flex;
-align-items:center;
-gap:4px;
-white-space:nowrap;
-font-weight:500;
-}
-.final-box{
-display:flex;
-flex-direction:column;
-gap:10px;
-}
-
-.final-amount{
-width:70px;
-padding:6px;
-border:1px solid #d6dee6;
-border-radius:5px;
-text-align:center;
-font-size:13px;
-background:#fafcfe;
-white-space:nowrap;
-}
-/* PREMIUM COLORS */
-
-.premium-input.above{
-color:#2e9e5b;
-font-weight:600;
-}
-
-.premium-input.below{
-color:#e05050;
-font-weight:600;
-}
-
-.premium-input.equal{
-color:#555;
-font-weight:600;
-}
-
-.above{
-color:#2e9e5b;
-font-weight:600;
-}
-
-.below{
-color:#e05050;
-font-weight:600;
-}
-
-.equal{
-color:#555;
-font-weight:600;
-}
-.money{
-white-space:nowrap;
-font-weight:500;
-}
-
-</style>
-
+        .money { font-weight: 700; color: #000; }
+ 
+    </style>
 </head>
-
 <body>
 
 <div class="result-container">
-<h1>📊 Tender Result</h1>
+    <div class="page-header">
+        <button class="back-btn" onclick="window.location.href='dashboard.html'">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </button>
+        
+        <h1><i class="fa-solid fa-square-poll-vertical"></i> Tender Result Analysis</h1>
+        
+        <div style="width: 120px;"></div> 
+    </div>
 
-<table>
-
-<thead>
-<tr>
-<th>Tender ID</th>
-<th>Notice number</th>
-<th>Work name</th>
-<th>WORK TYPE</th>
-<th>Time LIMIT</th>
-
-<th>Estimate</th>
-<th>Result</th>
-
-<th>Final</th>
-
-<th>Save</th>
-</tr>
-</thead>
-
-<tbody id="resultTable"></tbody>
-
-</table>
-
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tender ID</th>
+                    <th>Notice Number</th>
+                    <th>Work Name</th>
+                    <th>Type</th>
+                    <th>Time</th>
+                    <th>Estimate</th>
+                    <th>Result Entries</th>
+                    <th>Final Amount</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="resultTable"></tbody>
+        </table>
+    </div>
 </div>
-
+<script src="./supabse.js"></script>
 <script>
-const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
+   
+    let companies = [];
 
-const client = supabase.createClient(supabaseUrl,supabaseKey);
+    async function loadCompanies() {
+        const { data } = await client.from("company_list").select("company_name").order("company_name");
+        companies = data.map(c => c.company_name);
+    }
 
+    function companyOptions() {
+        let html = `<option value="">Select Company</option>`;
+        companies.forEach(c => html += `<option value="${c}">${c}</option>`);
+        html += `<option value="other">Add New</option>`;
+        return html;
+    }
 
-let companies=[]
+    function formatAmount(num) {
+        return "₹ " + Number(num).toLocaleString("en-IN");
+    }
 
+    async function loadResults() {
+        // Logic change: Ordered by ID descending to show new tenders at top
+        const { data } = await client.from("tenders").select("*").not("submission_id", "is", null).order("id", { ascending: false });
+        const table = document.getElementById("resultTable");
+        table.innerHTML = "";
 
-async function loadCompanies(){
+        data.forEach(row => {
+            // Notice formatting logic for 3 lines
+            let nParts = row.tender_notice_no ? row.tender_notice_no.split("/") : ["-","-"];
+            let line1 = nParts[0];
+            let line2 = nParts.slice(1).join(" / ");
 
-const {data}=await client
-.from("company_list")
-.select("company_name")
-.order("company_name")
+            table.innerHTML += `
+            <tr>
+                <td style="font-weight:700;">${row.tender_id}</td>
+                <td>
+                    <div class="notice-cell">
+                        <span class="n-line1">${line1}</span>
+                        <span class="n-line2">${line2}</span>
+                        <span class="n-line3">ID: ${row.tender_id}</span>
+                    </div>
+                </td>
+                <td><div class="work-name">${row.name_of_work}</div></td>
+                <td style="font-weight:600;">${row.work_type || ""}</td>
+                <td>${row.time_limit || ""}</td>
+                <td class="estimate" data-estimate="${row.estimate_amount}">
+                    <span class="money">${formatAmount(row.estimate_amount)}</span>
+                </td>
+                <td>
+                    <div id="resultBox_${row.tender_id}">
+                        <div class="result-row">
+                            <span class="rank">L1</span>
+                            <select class="company-select">${companyOptions()}</select>
+                            <select class="type" onchange="calculateFinal(${row.tender_id})">
+                                <option value="below">Below</option>
+                                <option value="above">Above</option>
+                                <option value="equal">Equal</option>
+                            </select>
+                            <input class="premium-input" placeholder="%" oninput="calculateFinal(${row.tender_id})">
+                            <button class="add-btn" onclick="addRank(${row.tender_id})">+</button>
+                        </div>
+                    </div>
+                </td>
+                <td><div id="final_${row.tender_id}" class="final-box"></div></td>
+                <td><button class="save-btn" onclick="saveResult(${row.tender_id})">Save</button></td>
+            </tr>`;
+            loadExistingResult(row.tender_id);
+        });
+    }
 
-companies=data.map(c=>c.company_name)
+    // --- REUSED LOGIC FUNCTIONS (SAME AS YOUR ORIGINAL) ---
 
+    function addRank(id) {
+        const box = document.getElementById(`resultBox_${id}`);
+        const rows = box.querySelectorAll(".result-row");
+        rows.forEach(r => { const btn = r.querySelector(".add-btn"); if (btn) btn.remove(); });
+        const rank = rows.length + 1;
+        const div = document.createElement("div");
+        div.className = "result-row";
+        div.innerHTML = `
+            <span class="rank">L${rank}</span>
+            <select class="company-select">${companyOptions()}</select>
+            <select class="type" onchange="calculateFinal(${id})">
+                <option value="below">Below</option>
+                <option value="above">Above</option>
+                <option value="equal">Equal</option>
+            </select>
+            <input class="premium-input" oninput="calculateFinal(${id})" placeholder="%">
+            <button class="add-btn" onclick="addRank(${id})">+</button>`;
+        box.appendChild(div);
+    }
+
+    function calculateFinal(tenderId) {
+    const tr = document.querySelector(`#resultBox_${tenderId}`).closest("tr");
+    const estimate = parseFloat(tr.querySelector(".estimate").dataset.estimate) || 0;
+    const rows = tr.querySelectorAll(".result-row");
+    const finalBox = tr.querySelector(".final-box");
+    finalBox.innerHTML = "";
+
+    rows.forEach(r => {
+        const input = r.querySelector(".premium-input");
+        const type = r.querySelector(".type").value;
+        let raw = input.value.replace(/[^\d.]/g, "");
+        
+        if (raw === "") {
+            // Agar input khali hai toh jagah maintain rakhne ke liye empty div
+            finalBox.innerHTML += `<div class="final-item"></div>`;
+            return;
+        }
+
+        let premium = parseFloat(raw);
+        let final = estimate;
+
+        input.classList.remove("above", "below", "equal");
+        if (type === "below") {
+            input.classList.add("below");
+            final = estimate - (estimate * premium / 100);
+        } else if (type === "above") {
+            input.classList.add("above");
+            final = estimate + (estimate * premium / 100);
+        } else {
+            input.classList.add("equal");
+            final = estimate;
+        }
+
+        // Amount ko sahi line mein dikhane ke liye 'final-item' wrapper ka use
+        finalBox.innerHTML += `
+            <div class="final-item">
+                <div class="final-amount">₹ ${Math.round(final).toLocaleString("en-IN")}</div>
+            </div>`;
+    });
 }
-
-function companyOptions(){
-
-let html=`<option value="">Select</option>`
-
-companies.forEach(c=>{
-html+=`<option value="${c}">${c}</option>`
-})
-
-html+=`<option value="other">Add New</option>`
-
-return html
-
-}
-
-
-
-async function loadResults(){
-
-const {data}=await client
-.from("tenders")
-.select("*")
-.not("submission_id","is",null)
-
-const table=document.getElementById("resultTable")
-
-table.innerHTML=""
-
-data.forEach(row=>{
-
-table.innerHTML+=`
-
-<tr>
-
-<td>${row.tender_id}</td>
-<td>${row.tender_notice_no}</td>
-<td>${row.name_of_work}</td>
-<td>${row.work_type||""}</td>
-<td>${row.time_limit||""}</td>
-<td class="estimate"
-data-estimate="${row.estimate_amount}">
-<span class="money">${formatAmount(row.estimate_amount)}</span>
-</td>
-<td>
-
-<div id="resultBox_${row.tender_id}">
-
-<div class="result-row">
-
-<span class="rank">L1</span>
-
-<select class="company-select">
-${companyOptions()}
-</select>
-
-<select class="type" onchange="calculateFinal(${row.tender_id})">
-<option value="above">Above</option>
-<option value="below">Below</option>
-<option value="equal">Equal</option>
-</select>
-
-<input class="premium-input"
-placeholder="%"
-oninput="calculateFinal(${row.tender_id})">
-
-<button class="add-btn"
-onclick="addRank(${row.tender_id})">+</button>
-
-</div>
-
-</div>
-
-</td>
-
-
-
-
-
-<td>
-<div id="final_${row.tender_id}" class="final-box"></div>
-
-</td>
-
-<td>
-
-<button class="save-btn"
-onclick="saveResult(${row.tender_id})">
-Save
-</button>
-
-</td>
-
-</tr>
-
-`
-loadExistingResult(row.tender_id) 
-})
-
-}
-
-
-
-function addRank(id){
-
-const box=document.getElementById(`resultBox_${id}`)
-
-const rows=box.querySelectorAll(".result-row")
-
-rows.forEach(r=>{
-const btn=r.querySelector(".add-btn")
-if(btn) btn.remove()
-})
-
-const rank=rows.length+1
-
-const div=document.createElement("div")
-
-div.className="result-row"
-
-div.innerHTML=`
-
-<span class="rank">L${rank}</span>
-
-<select class="company-select">
-${companyOptions()}
-</select>
-
-<select class="type"
-onchange="calculateFinal(${id})">
-
-<option value="above">Above</option>
-<option value="below">Below</option>
-
-</select>
-
-<input class="premium-input"
-oninput="calculateFinal(${id})"
-placeholder="%">
-
-<button class="add-btn"
-onclick="addRank(${id})">+</button>
-
-`
-
-box.appendChild(div)
-
-}
-
-
-function calculateFinal(tenderId){
-
-const tr = document.querySelector(`#resultBox_${tenderId}`).closest("tr")
-
-const estimate =
-parseFloat(tr.querySelector(".estimate").dataset.estimate) || 0
-
-const rows = tr.querySelectorAll(".result-row")
-
-const finalBox = tr.querySelector(".final-box")
-
-finalBox.innerHTML = ""
-
-rows.forEach(r=>{
-
-const input = r.querySelector(".premium-input")
-
-let raw = input.value.replace(/[^\d.]/g,"")
-
-if(raw===""){
-return
-}
-
-let premium = parseFloat(raw)
-
-const type = r.querySelector(".type").value
-
-let final = estimate
-
-input.classList.remove("above","below","equal")
-
-// BELOW
-if(type==="below"){
-
-input.classList.add("below")
-
-if(premium>0){
-input.value = "-" + premium + "%"
-}
-
-final = estimate - (estimate * premium / 100)
-
-}
-
-// ABOVE
-else if(type==="above"){
-
-input.classList.add("above")
-
-if(premium>0){
-input.value = "+" + premium + "%"
-}
-
-final = estimate + (estimate * premium / 100)
-
-}
-
-// EQUAL
-else if(type==="equal"){
-
-input.classList.add("equal")
-
-input.value = "0%"
-
-premium = 0
-
-final = estimate
-
-}
-
-finalBox.innerHTML += `
-<div class="final-amount">
-<span>₹</span>
-<span>${Math.round(final).toLocaleString("en-IN")}</span>
-</div>`;
-
-
-})
-
-}
-
-
-function formatAmount(num){
-return "₹ " + Number(num).toLocaleString("en-IN",{
-maximumFractionDigits:0
-});
-}
-async function loadExistingResult(tenderId){
-
-const {data,error}=await client
-.from("tender_result")
-.select("*")
-.eq("tender_id",tenderId)
-.order("rank",{ascending:true})
-
-if(error){
-console.log(error)
-return
-}
-
-if(!data || data.length===0) return
-
-const box=document.getElementById(`resultBox_${tenderId}`)
-
-box.innerHTML=""
-
-data.forEach((row,index)=>{
-
-const isLast=index===data.length-1
-
-const div=document.createElement("div")
-
-div.className="result-row"
-
-div.innerHTML=`
-
-<span class="rank">${row.rank}</span>
-
-<select class="company-select">
-${companyOptions()}
-</select>
-
-<select class="type"
-onchange="calculateFinal(${tenderId})">
-
-<option value="below">Below</option>
-<option value="above">Above</option>
-<option value="equal">Equal</option>
-
-</select>
-
-<input class="premium-input"
-value="${row.bid_price}"
-oninput="calculateFinal(${tenderId})"
-placeholder="%">
-
-${isLast?`<button class="add-btn" onclick="addRank(${tenderId})">+</button>`:""}
-
-`
-
-box.appendChild(div)
-
-/* company select set */
-div.querySelector(".company-select").value=row.company_name
-
-/* type set */
-div.querySelector(".type").value=row.above_below
-
-})
-
-calculateFinal(tenderId)
-
-}
-
-function updateTypeStyle(select){
-
-select.classList.remove("above","below","equal");
-
-if(select.value==="above"){
-select.classList.add("above");
-}
-
-if(select.value==="below"){
-select.classList.add("below");
-}
-
-if(select.value==="equal"){
-select.classList.add("equal");
-}
-
-}
-async function saveResult(tenderId){
-
-const box=document.getElementById(`resultBox_${tenderId}`)
-const rows=box.querySelectorAll(".result-row")
-
-const tr = box.closest("tr")
-
-const estimate =
-parseFloat(tr.querySelector(".estimate").dataset.estimate) || 0
-
-const time_limit = tr.children[2].innerText
-const work_type = tr.children[3].innerText
-
-await client
-.from("tender_result")
-.delete()
-.eq("tender_id",tenderId)
-
-let l1Company=null
-
-for(let i=0;i<rows.length;i++){
-
-const company=
-rows[i].querySelector(".company-select").value
-
-const type=
-rows[i].querySelector(".type").value
-
-let premium=
-rows[i].querySelector(".premium-input").value
-
-premium=premium.replace(/[%+=-]/g,"")
-
-let premiumNum=parseFloat(premium)||0
-
-let final=estimate
-
-if(type==="below"){
-final = estimate - (estimate * premiumNum / 100)
-}
-
-if(type==="above"){
-final = estimate + (estimate * premiumNum / 100)
-}
-
-if(type==="equal"){
-final = estimate
-}
-
-if(!company) continue
-
-if(i===0){
-l1Company=company
-}
-
-await client
-.from("tender_result")
-.insert({
-
-tender_id:tenderId,
-company_name:company,
-rank:`L${i+1}`,
-bid_price:premium,
-above_below:type,
-
-estimate_amount:estimate,
-final_amount:final,
-time_limit:time_limit,
-work_type:work_type
-
-})
-
-}
-
-if(l1Company && l1Company.toUpperCase().trim()==="ANIRAJ BUILDERS"){
-
-await client
-.from("tender_awarded")
-.delete()
-.eq("tender_id",tenderId)
-
-await client
-.from("tender_awarded")
-.insert({
-
-tender_id:tenderId,
-company_name:l1Company
-
-})
-
-}
-
-alert("Saved")
-
-}
-
-
-
-async function start(){
-
-await loadCompanies()
-
-await loadResults()
-
-}
-
-start()
-
+    async function loadExistingResult(tenderId) {
+        const { data } = await client.from("tender_result").select("*").eq("tender_id", tenderId).order("rank", { ascending: true });
+        if (!data || data.length === 0) return;
+        const box = document.getElementById(`resultBox_${tenderId}`);
+        box.innerHTML = "";
+        data.forEach((row, index) => {
+            const isLast = index === data.length - 1;
+            const div = document.createElement("div");
+            div.className = "result-row";
+            div.innerHTML = `
+                <span class="rank">${row.rank}</span>
+                <select class="company-select">${companyOptions()}</select>
+                <select class="type" onchange="calculateFinal(${tenderId})">
+                    <option value="below">Below</option>
+                    <option value="above">Above</option>
+                    <option value="equal">Equal</option>
+                </select>
+                <input class="premium-input" value="${row.bid_price}" oninput="calculateFinal(${tenderId})" placeholder="%">
+                ${isLast ? `<button class="add-btn" onclick="addRank(${tenderId})">+</button>` : ""}`;
+            box.appendChild(div);
+            div.querySelector(".company-select").value = row.company_name;
+            div.querySelector(".type").value = row.above_below;
+        });
+        calculateFinal(tenderId);
+    }
+
+    async function saveResult(tenderId) {
+        const box = document.getElementById(`resultBox_${tenderId}`);
+        const rows = box.querySelectorAll(".result-row");
+        const tr = box.closest("tr");
+        const estimate = parseFloat(tr.querySelector(".estimate").dataset.estimate) || 0;
+        const time_limit = tr.children[4].innerText;
+        const work_type = tr.children[3].innerText;
+
+        await client.from("tender_result").delete().eq("tender_id", tenderId);
+        let l1Company = null;
+
+        for (let i = 0; i < rows.length; i++) {
+            const company = rows[i].querySelector(".company-select").value;
+            const type = rows[i].querySelector(".type").value;
+            let premium = rows[i].querySelector(".premium-input").value.replace(/[%+=-]/g, "");
+            let premiumNum = parseFloat(premium) || 0;
+            let final = (type === "below") ? estimate - (estimate * premiumNum / 100) : (type === "above") ? estimate + (estimate * premiumNum / 100) : estimate;
+
+            if (!company) continue;
+            if (i === 0) l1Company = company;
+
+            await client.from("tender_result").insert({
+                tender_id: Number(tenderId),
+                company_name: company,
+                rank: `L${i + 1}`,
+                bid_price: premium,
+                above_below: type,
+                estimate_amount: Number(estimate),
+                final_amount: Number(final),
+                time_limit: time_limit,
+                work_type: work_type
+            });
+        }
+        alert("Result Saved Successfully!");
+    }
+
+    async function start() {
+        await loadCompanies();
+        await loadResults();
+    }
+    start();
 </script>
-
 </body>
 </html>

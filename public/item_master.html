@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Item | Edit & Hover Fix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root { --bg: #f1f5f9; --border: #cbd5e1; --header-h: 70px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+      .top-bar { 
+    background: white; 
+    padding: 0 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    border-bottom: 1px solid var(--border); 
+    position: fixed; 
+    top: 0; left: 0; right: 0; 
+    height: var(--header-h); 
+    z-index: 100; 
+}
+
+.filters { 
+    display: flex; 
+    align-items: center; 
+    gap: 25px; /* Dashboard aur filters ke beech proper gap */
+}
+        .table-container { background: white; border: 1px solid var(--border); border-radius: 8px; margin: 20px; margin-top: calc(var(--header-h) + 20px); overflow: auto; }
+        table { border-collapse: collapse; width: 100%; font-size: 13px; }
+        th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+        thead th { background: #f8fafc; font-weight: 700; color: #475569; position: sticky; top: 0; }
+        .num { text-align: right; font-family: 'Monaco', monospace; }
+        .btn-add { background: #3b82f6; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-action { border: none; background: none; cursor: pointer; font-size: 15px; margin: 0 5px; }
+        .inline-input { width: 100%; border: 1px solid #3b82f6; padding: 5px; border-radius: 4px; box-sizing: border-box; }
+        .select-dropdown { padding: 8px; border-radius: 5px; border: 1px solid var(--border); font-weight: 600; background: #fff; min-width: 150px; }
+        .tooltip-cell { cursor: help; border-bottom: 1px dashed #cbd5e1; }
+        /* Container styling */
+.custom-dropdown-container { width: 250px; font-family: 'Inter', sans-serif; }
+
+.dropdown-wrapper { position: relative; cursor: pointer; }
+
+/* Selected box */
+.dropdown-selected {
+    background: white; border: 1px solid #cbd5e1; padding: 8px 12px;
+    border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;
+}
+
+/* List box */
+.dropdown-list {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: white; border: 1px solid #cbd5e1; border-radius: 6px;
+    margin-top: 4px; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.dropdown-items-container { max-height: 200px; overflow-y: auto; }
+
+/* Har row ki styling */
+.dropdown-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #475569;
+}
+
+.dropdown-item:hover { background: #f0f9ff; }
+
+/* Icons styling */
+.item-actions { display: flex; gap: 10px; }
+.fa-edit { color: #10b981; cursor: pointer; }   /* Green Edit */
+.fa-trash { color: #ef4444; cursor: pointer; }  /* Red Trash */
+
+/* Footer (Add New) */
+.dropdown-footer {
+    padding: 10px 12px; border-top: 1px solid #e2e8f0; color: #3b82f6;
+    font-size: 13px; font-weight: 600; text-align: left;
+}
+.dropdown-footer:hover { background: #f8fafc; }
+
+.show { display: block !important; }
+.back-btn {
+    background: white;
+    color: #475569; /* Slate grey color */
+    border: 1px solid #e2e8f0; /* Subtle light border */
+    padding: 8px 16px;
+    border-radius: 8px; /* Rounded corners */
+    font-size: 14px;
+    font-weight: 550;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Light shadow */
+}
+
+.back-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b; /* Hover par thoda dark text */
+}
+
+.back-btn i {
+    font-size: 16px;
+    color: #64748b; /* Icon color slightly lighter */
+}
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="filters">
+        <button class="back-btn" onclick="window.location.href='dashboard.html'">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </button>
+
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
+            <div class="custom-dropdown-container" style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: 700; color: #475569; font-size: 12px; white-space: nowrap;">PRICING:</span>
+                
+                <div class="dropdown-wrapper" style="min-width: 200px;">
+                    <div class="dropdown-selected" onclick="toggleDropdown()" id="selectedPricing">
+                        Choose Pricing <i class="fa fa-chevron-down"></i>
+                    </div>
+
+                    <div class="dropdown-list" id="pricingOptions">
+                        <div class="dropdown-items-container" id="itemsContainer"></div>
+                        <div class="dropdown-footer" onclick="addNewPricingType()">
+                            <i class="fa fa-plus"></i> Add New Pricing
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" id="pricingDept" value="ALL">
+
+        <div>
+            <span style="font-weight: 700; color: #475569; font-size: 12px;">WORK TYPE:</span>
+            <select id="workTypeFilter" class="select-dropdown" onchange="refreshMasterItems()">
+                <option value="ALL">Show All Work Types</option>
+            </select>
+        </div>
+    </div>
+    
+    <button class="btn-add" onclick="addNewEmptyRow()">
+        <i class="fa fa-plus"></i> Add New Row
+    </button>
+</div>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Item Description</th>
+                <th>Unit</th>
+                <th>Work Type</th>
+                <th class="num">Est. Rate</th>
+                <th class="num">Act. Rate</th>
+                <th class="num">Diff %</th>
+                <th style="text-align: center; width: 120px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+<script src="./supabse.js"></script>
+<script>
+   
+    let allItems = [];
+    let tempDescription = "";
+
+    async function fetchWorkTypes() {
+        const { data, error } = await _supabase.from('work_type').select('work_name');
+        if (error) return console.error(error);
+        const dropdown = document.getElementById('workTypeFilter');
+        const uniqueTypes = [...new Set(data.map(item => item.work_name).filter(Boolean))];
+        uniqueTypes.forEach(type => {
+            const opt = document.createElement('option');
+            opt.value = type; opt.innerText = type;
+            dropdown.appendChild(opt);
+        });
+    }
+
+    async function refreshMasterItems() {
+        const pricing = document.getElementById('pricingDept').value;
+        const workType = document.getElementById('workTypeFilter').value;
+        let query = _supabase.from('Comparison_data').select('*').order('id', { ascending: false });
+        
+        if (pricing !== "ALL") query = query.eq('department_name', pricing);
+        if (workType !== "ALL") query = query.eq('work_type', workType);
+
+        const { data, error } = await query;
+        if (error) return console.error(error);
+        allItems = data;
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        allItems.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.id = `row-${item.id}`;
+            const est = parseFloat(item.estimate_rate) || 0;
+            const act = parseFloat(item.actual_cost_rate) || 0;
+            const diff = est > 0 ? ((est - act) / est * 100).toFixed(2) : 0;
+
+            tr.innerHTML = `
+                <td>${item.item_name || '-'}</td>
+                <td>${item.unit || '-'}</td>
+                <td>${item.work_type || '-'}</td>
+                <td class="num">${est.toLocaleString()}</td>
+                <td class="num tooltip-cell" title="${item.description || 'No notes'}">${act.toLocaleString()}</td>
+                <td class="num" style="font-weight:bold; color:${diff < 0 ? '#ef4444' : '#10b981'}">${diff}%</td>
+                <td style="text-align: center;">
+                    <button class="btn-action" style="color:#3b82f6;" onclick="enableRowEdit(${item.id})"><i class="fa fa-edit"></i></button>
+                    <button class="btn-action" style="color:#ef4444;" onclick="deleteItem(${item.id})"><i class="fa fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function enableRowEdit(id) {
+        const item = allItems.find(i => i.id === id);
+        const tr = document.getElementById(`row-${id}`);
+        tr.style.background = "#fffbeb";
+        tr.innerHTML = `
+            <td><input type="text" class="inline-input" id="edit-name-${id}" value="${item.item_name || ''}"></td>
+            <td><input type="text" class="inline-input" id="edit-unit-${id}" value="${item.unit || ''}"></td>
+            <td>${item.work_type}</td>
+            <td><input type="number" class="inline-input num" id="edit-est-${id}" value="${item.estimate_rate}"></td>
+            <td><input type="number" class="inline-input num" id="edit-act-${id}" value="${item.actual_cost_rate}" onblur="askEditDesc(${id})"></td>
+            <td class="num">-</td>
+            <td style="text-align: center;">
+                <button class="btn-action" style="color:#10b981;" onclick="updateRow(${id})"><i class="fa fa-save"></i></button>
+                <button class="btn-action" style="color:#64748b;" onclick="renderTable()"><i class="fa fa-times-circle"></i></button>
+            </td>
+        `;
+    }
+
+    function askEditDesc(id) {
+        const item = allItems.find(i => i.id === id);
+        const newDesc = prompt("Update Description for hover:", item.description || "");
+        if (newDesc !== null) item.description = newDesc;
+    }
+
+    async function updateRow(id) {
+        const item = allItems.find(i => i.id === id);
+        const updated = {
+            item_name: document.getElementById(`edit-name-${id}`).value,
+            unit: document.getElementById(`edit-unit-${id}`).value,
+            estimate_rate: parseFloat(document.getElementById(`edit-est-${id}`).value) || 0,
+            actual_cost_rate: parseFloat(document.getElementById(`edit-act-${id}`).value) || 0,
+            description: item.description
+        };
+        const { error } = await _supabase.from('Comparison_data').update(updated).eq('id', id);
+        if (error) alert(error.message);
+        else refreshMasterItems();
+    }
+
+    function addNewEmptyRow() {
+        const tbody = document.getElementById('tableBody');
+        const tr = document.createElement('tr');
+        tr.style.background = "#eff6ff";
+        tr.innerHTML = `
+            <td><input type="text" placeholder="Item Name" class="inline-input" id="new-name"></td>
+            <td><input type="text" placeholder="Unit" class="inline-input" id="new-unit"></td>
+            <td style="color:#64748b; font-size:11px;">Selected in Filter</td>
+            <td><input type="number" placeholder="0" class="inline-input num" id="new-est"></td>
+            <td><input type="number" placeholder="0" class="inline-input num" id="new-act" onblur="tempDescription = prompt('Enter Description for hover:')"></td>
+            <td class="num">-</td>
+            <td style="text-align: center;">
+                <button class="btn-action" style="color:#10b981;" onclick="saveNewRow()"><i class="fa fa-save"></i></button>
+                <button class="btn-action" style="color:#64748b;" onclick="renderTable()"><i class="fa fa-times-circle"></i></button>
+            </td>
+        `;
+        tbody.prepend(tr);
+    }// --- Pricing Type Logic ---
+
+// Dropdown toggle karne ke liye
+function toggleDropdown() {
+    document.getElementById('pricingOptions').classList.toggle('show');
+}
+
+// Supabase se data laane ke liye
+async function fetchPricingTypes() {
+    const { data, error } = await _supabase.from('pricing').select('*').order('pricing_type', { ascending: true });
+    if (error) return console.error(error);
+
+    const container = document.getElementById('itemsContainer');
+    container.innerHTML = `<div class="dropdown-item" onclick="selectOption('ALL')">Show All</div>`;
+
+    data.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'dropdown-item';
+        row.innerHTML = `
+            <span onclick="selectOption('${item.pricing_type}')" style="flex:1">${item.pricing_type}</span>
+            <div class="item-actions">
+                <i class="fa fa-edit" onclick="editPricingType(${item.id}, '${item.pricing_type}')"></i>
+                <i class="fa fa-trash" onclick="deletePricingType(${item.id}, '${item.pricing_type}')"></i>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+// Option select karne par
+function selectOption(val) {
+    document.getElementById('selectedPricing').innerText = val === 'ALL' ? 'Show All' : val;
+    document.getElementById('pricingDept').value = val; // Hidden field update
+    toggleDropdown();
+    refreshMasterItems(); // Aapka purana filter function
+}
+
+// Add, Edit, Delete functions
+async function addNewPricingType() {
+    const name = prompt("Enter New Pricing Name:");
+    if (!name) return;
+    await _supabase.from('pricing').insert([{ pricing_type: name }]);
+    fetchPricingTypes();
+}
+
+async function editPricingType(id, oldName) {
+    event.stopPropagation();
+    const newName = prompt("Edit Name:", oldName);
+    if (!newName || newName === oldName) return;
+    await _supabase.from('pricing').update({ pricing_type: newName }).eq('id', id);
+    fetchPricingTypes();
+}
+
+async function deletePricingType(id, name) {
+    event.stopPropagation();
+    if (!confirm(`Delete ${name}?`)) return;
+    await _supabase.from('pricing').delete().eq('id', id);
+    fetchPricingTypes();
+}
+
+// Bahar click karne par dropdown band ho jaye
+window.onclick = function(e) {
+    if (!e.target.closest('.dropdown-wrapper')) {
+        document.getElementById('pricingOptions').classList.remove('show');
+    }
+}
+
+// Initial call
+fetchPricingTypes();
+
+// --- Init Update ---
+async function init() {
+    await fetchPricingTypes(); // Naya function call
+    await fetchWorkTypes();
+    await refreshMasterItems();
+}
+init();
+
+    async function saveNewRow() {
+        const pricing = document.getElementById('pricingDept').value;
+        const workType = document.getElementById('workTypeFilter').value;
+        const data = {
+            item_name: document.getElementById('new-name').value,
+            unit: document.getElementById('new-unit').value,
+            work_type: workType === "ALL" ? "" : workType,
+            department_name: pricing === "ALL" ? "General" : pricing,
+            estimate_rate: parseFloat(document.getElementById('new-est').value) || 0,
+            actual_cost_rate: parseFloat(document.getElementById('new-act').value) || 0,
+            description: tempDescription
+        };
+        const { error } = await _supabase.from('Comparison_data').insert([data]);
+        if (error) alert(error.message);
+        else { tempDescription = ""; refreshMasterItems(); }
+    }
+
+    async function deleteItem(id) {
+        if (!confirm("Delete this item?")) return;
+        const { error } = await _supabase.from('Comparison_data').delete().eq('id', id);
+        if (error) alert("Error deleting: " + error.message);
+        else refreshMasterItems();
+    }
+
+    async function init() {
+        await fetchWorkTypes();
+        await refreshMasterItems();
+    }
+    init();
+</script>
+</body>
+</html>

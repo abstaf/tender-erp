@@ -1,241 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Tender Management Dashboard</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- FONT AWESOME -->
- 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-<style>
-body{
-    margin:0;
-     font-family: 'Baloo Bhai 2';
-    background:#eaf1f8;
-      text-align: justify;
-}
-
-.header{
-    background: linear-gradient(to right,#1e40af,#2563eb);
-    color:white;
-    padding:18px 30px;
-    font-size:20px;
-    font-weight:600;
-}
-
-.section-title{
-    padding:25px 30px 10px;
-    font-size:20px;
-    font-weight:600;
-    color:#333;
-}
-
-.grid{
-    display:grid;
-    grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
-    gap:25px;
-    padding:20px 30px 40px;
-}
-
-.card{
-    background:#f3f4f6;
-    border-radius:14px;
-    padding:30px 20px;
-    text-align:center;
-    cursor:pointer;
-    transition:0.3s ease;
-    box-shadow:0 4px 10px rgba(0,0,0,0.05);
-    border-left:6px solid #2563eb;
-}
-
-.card:hover{
-    transform:translateY(-6px);
-    box-shadow:0 10px 20px rgba(0,0,0,0.1);
-}
-
-.card i{
-    font-size:38px;
-    margin-bottom:12px;
-}
-
-.card h4{
-    margin:0;
-    font-size:14px;
-}
-
-.blue{ border-left-color:#2563eb; }
-.green{ border-left-color:#16a34a; }
-.orange{ border-left-color:#f97316; }
-.red{ border-left-color:#dc2626; }
-
-.footer{
-    text-align:center;
-    padding:20px;
-    font-size:13px;
-    color:#555;
-}
-
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Aniraj Builders</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #10b981; --bg: #f9fafb; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 380px; text-align: center; }
+        .logo-img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 20px; border: 3px solid #f3f4f6; }
+        h2 { margin-bottom: 10px; color: #111827; }
+        p { color: #6b7280; font-size: 14px; margin-bottom: 30px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; font-size: 14px; outline: none; }
+        input:focus { border-color: var(--accent); }
+        button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+    </style>
 </head>
-
 <body>
 
-<div class="header">
-<i class="fa-solid fa-chart-line"></i> Tender Management Dashboard
-</div>
-
-<div class="section-title">
-Quick Access
-</div>
-
-<div class="grid">
-
-    <div class="card blue" onclick="openPage('tenders_list.html')">
-        <i class="fa-solid fa-file-circle-plus"></i>
-        <h4>NEW TENDER</h4>
-             <div class="pending">
-    Total Tenders
-    <div id="tenderCount">0</div>
-  </div>
-    </div>
-     
-
-    <div class="card blue" >
-        <i class="fa-solid fa-calculator"></i>
-        <h4>TENDER UNDER CALCULATION</h4>
-    </div>
-
-    <div class="card green"onclick="openPage('submitted_tenders.html')">
-        <i class="fa-solid fa-paper-plane"></i>
-        <h4>TENDER SUBMITTED</h4>
-            <div class="pending">
-    Total SUBMITTED Tenders
-
-  </div>
-    <div id="submittedload" style="font-size:22px;">0</div>
-    </div>
-
-    <div class="card green" onclick="openPage('tender_result.html')">
-        <i class="fa-solid fa-square-poll-vertical"></i>
-        <h4>TENDER RESULT</h4>
-
-</div>
-
-    <div class="card blue" onclick="openPage('tender_awarded.html')">
-        <i class="fa-solid fa-trophy"></i>
-        <h4>TENDER AWARDED</h4>
-              <div style="font-size:14px;color:#555;">TOTAL AWARDED</div>
-        <div id="awardCount" style="font-size:22px;">0</div>
-    </div>
-
-
-
-    <div class="card blue">
-        <i class="fa-solid fa-circle-xmark"></i>
-        <h4>TENDER LOSS</h4>
-    </div>
-
-    <div class="card red"  onclick="openPage('participant_report.html')">
-        <i class="fa-solid fa-users"></i>
-        <h4>PARTICIPANT REPORT</h4>
-    </div>
-
-    <div class="card orange" onclick="openPage('emd_return_letter.html')">
-        <i class="fa-solid fa-money-bill-transfer" ></i>
-        <h4>EMD RETURN LETTER</h4>
-        <div style="font-size:14px;color:#555;">Pending EMD & Fee</div>
-        <div id="emdCount" style="font-size:22px;">0</div>
-    </div>
-
-    <div class="card green" onclick="openPage('work_on_hand.html')">
-        <i class="fa-solid fa-briefcase"></i>
-        <h4>AWARDED / WORK ON HAND</h4>
+<div class="login-card">
+    <img src="logo.jpeg" class="logo-img" alt="Logo">
+    <h2>Welcome Back</h2>
+    <p>Please enter your details to login</p>
     
-    </div>
-
+    <input type="email" id="email" placeholder="Email Address">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="handleLogin()" id="loginBtn">Login to Dashboard</button>
 </div>
-
-<div class="footer">
-© 2026 Tender Management System
-</div>
-
+<script src="./supabse.js"></script>
 <script>
-    const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
+  
+    async function handleLogin() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btn = document.getElementById('loginBtn');
 
+        btn.innerText = "Authenticating...";
+        btn.disabled = true;
 
-const client = supabase.createClient(supabaseUrl,supabaseKey);  
-function openPage(page){
-    window.location.href = page;
-}
-async function loadEmdCount(){
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
 
-const {data,error} = await client
-.from("tenders")
-.select("*")
-.not("submission_id","is",null);
-
-document.getElementById("emdCount").innerText = data.length;
-
-}
-async function loadNewTenderCount(){
-
-const { count, error } = await client
-.from("tenders")
-.select("*", { count: "exact", head: true })
-.is("submission_id", null);   // jaha submission_id nahi hai
-
-if(error){
-console.log(error);
-return;
-}
-
-document.getElementById("tenderCount").innerText = count;
-
-}
-
-
-async function submittedload(){
-
-const {data,error} = await client
-.from("tenders")
-.select("*")
-.not("submission_id","is",null);
-
-document.getElementById("submittedload").innerText = data.length;
-
-}
-
-
-async function loadAwardedCount(){
-
-const { data, error } = await client
-.from("tender_result")
-.select("*")
-.eq("rank","L1")
-.filter("company_name","ilike","%aniraj%");
-
-if(error){
-console.log(error);
-return;
-}
-
-document.getElementById("awardCount").innerText = data.length;
-
-}
-
-loadAwardedCount();
-
-submittedload();
-
-
-loadNewTenderCount();
-
-loadEmdCount();
+        if (error) {
+            alert("Login Failed: " + error.message);
+            btn.innerText = "Login to Dashboard";
+            btn.disabled = false;
+        } else {
+            // Success: Go to your main dashboard file
+            window.location.href = "dashboard.html"; 
+        }
+    }
 </script>
 
 </body>

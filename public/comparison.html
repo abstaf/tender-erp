@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tender Multi-Comparison | On-Process</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --border: #cbd5e1;
+            --qty-bg: #eff6ff;
+            --header-h: 70px;
+            --footer-h: 50px;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 0; 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        /* --- 1. FIXED TOP BAR --- */
+        .top-bar { 
+            background: white; 
+            padding: 10px 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-h);
+            box-sizing: border-box;
+            z-index: 100;
+        }
+        .status-tag { background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 5px; }
+        
+        .chip-container { display: flex; gap: 8px; overflow-x: auto; flex: 1; padding: 5px 0; }
+        .chip {
+            padding: 5px 12px; background: #f8fafc; border: 1px solid var(--border);
+            border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; transition: 0.2s;
+        }
+        
+        .chip.selected { background: #e2e8f0; border-color: #94a3b8; color: #475569; }
+        
+        .chip.active-category { 
+            background: var(--primary) !important; 
+            color: white !important; 
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 2px #c7d2fe;
+        }
+
+        /* --- 2. PERFECTLY FREEZED TABLE CONTAINER --- */
+        .table-container { 
+            background: white; 
+            border: 1px solid var(--border); 
+            overflow: auto; /* Table scroll isi area me hoga */
+            border-radius: 8px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+            margin: 10px;
+            margin-top: calc(var(--header-h) + 10px); 
+            margin-bottom: calc(var(--footer-h) + 10px); 
+            flex: 1;
+        }
+        
+        table { border-collapse: collapse; width: 100%; font-size: 13px; }
+        
+        th, td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; }
+        
+        /* [FREEZE] - Left Column (Item Description) */
+        .sticky-col { 
+            position: sticky; 
+            left: 0; 
+            background: #fff !important; 
+            z-index: 5; 
+            font-weight: 600; 
+            min-width: 240px; 
+            border-right: 2px solid var(--border); 
+        }
+        
+        /* [FREEZE] - Main Table Headers */
+        thead th { 
+            background: #f8fafc; 
+            position: sticky; 
+            top: 0; 
+            z-index: 20; /* High z-index is must */
+        }
+        
+        /* Z-index hierarchy for top-left intersection corner */
+        thead th.sticky-col { z-index: 25; }
+
+        /* [FREEZE] - Sub Header (2nd Row of thead) */
+        thead tr:nth-child(2) th {
+            top: 25px; /* adjust according to the previous header height */
+            z-index: 20;
+        }
+        
+        .tender-header { background: #f1f5f9 !important; text-align: center; color: #1e293b; font-weight: 700; }
+        .sub-header { background: #f8fafc; font-size: 11px; text-align: center; font-weight: 700; color: #64748b; }
+
+        .qty-cell { background-color: var(--qty-bg) !important; width: 70px; text-align: center; }
+        .qty-input {
+            width: 100%; border: 1.5px solid #3b82f6; border-radius: 4px; 
+            text-align: center; font-weight: 700; color: #1e40af; padding: 3px 0;
+            background: white; outline: none; font-size: 12px;
+        }
+        .num { text-align: right; font-family: 'Monaco', monospace; }
+
+        /* [FREEZE] - Last Two Rows (GRAND TOTALS & MARGIN ANALYSIS) */
+        .sticky-footer-row-1 {
+            position: sticky;
+            bottom: 27px; /* analysis row height approx */
+            background: #f8fafc !important;
+            z-index: 15;
+            font-weight: 800;
+            border-top: 2px solid #cbd5e1;
+        }
+        .sticky-footer-row-2 {
+            position: sticky;
+            bottom: 0;
+            background: #f1f5f9 !important;
+            z-index: 15;
+            font-weight: 800;
+        }
+        
+        /* Ensure the fixed left text doesn't hide behind scrolling rows on footer */
+        .sticky-footer-row-1 .sticky-col,
+        .sticky-footer-row-2 .sticky-col {
+            z-index: 16;
+            background: inherit !important;
+        }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        
+        .modal-field { margin-bottom: 15px; }
+        .modal-field label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 5px; }
+        .modal-field input, .modal-field select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+
+        .btn-add { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        
+        /* --- 3. FIXED SAVE BAR --- */
+        .footer-bar {
+            height: var(--footer-h);
+            background: white;
+            border-top: 1px solid var(--border);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 20px;
+            z-index: 100;
+        }
+
+        .btn-save-all { 
+            padding: 6px 15px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: 0.2s;
+        }
+        .btn-save-all:hover { background: var(--primary-hover); }
+        
+        .select-dropdown {
+            padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+            font-size: 12px; font-weight: 600; color: #475569; background: white; outline: none; cursor: pointer;
+        }
+         .back-btn {
+    background: white;
+    color: #475569; /* Slate grey color */
+    border: 1px solid #e2e8f0; /* Subtle light border */
+    padding: 8px 16px;
+    border-radius: 8px; /* Rounded corners */
+    font-size: 14px;
+    font-weight: 550;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Light shadow */
+}
+
+.back-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b; /* Hover par thoda dark text */
+}
+
+.back-btn i {
+    font-size: 16px;
+    color: #64748b; /* Icon color slightly lighter */
+}
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+      <button class="back-btn" onclick="window.location.href='dashboard.html'">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </button>
+    <span style="font-weight: 700; font-size: 12px; color: #475569;">SELECT TENDERS:</span>
+    <div id="idSelector" class="chip-container"></div>
+    
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-weight: 700; font-size: 12px; color: #475569;">PRICING TYPE:</span>
+        <select id="pricingDept" class="select-dropdown">
+            <option value="">Select Pricing Type</option>
+            <option value="WW - Maintenance">WW - Maintenance</option>
+            <option value="WW - Capital">WW - Capital</option>
+            <option value="ROAD - MAINTANANCE">ROAD - MAINTANANCE</option>
+            <option value="ROAD - CAPITAL">ROAD - CAPITAL</option>
+        </select>
+    </div>
+
+    <button class="btn-add" onclick="checkPricingAndOpenModal()"><i class="fa fa-plus"></i> Add New Item</button>
+</div>
+
+<div class="table-container">
+    <table id="mainTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody">
+            <tr><td colspan="10" style="text-align:center; padding:80px; color: #94a3b8; font-size: 16px;">Select Tender IDs to start calculation</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="footer-bar">
+    <button class="btn-save-all" onclick="saveAllChanges()"><i class="fa-solid fa-cloud-arrow-up"></i> Save All Data</button>
+</div>
+
+<div id="itemModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 18px;">Add New Master Item</h2>
+        
+        <div class="modal-field">
+            <label>Item Description (item_name)</label>
+            <input type="text" id="itemName" placeholder="e.g., Earth work">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="modal-field" style="flex: 1;">
+                <label>Unit</label>
+                <input type="text" id="itemUnit" placeholder="Cumt">
+            </div>
+            <div class="modal-field" style="flex: 2;">
+                <label>Work Type</label>
+                <select id="itemWorkType">
+                    <option value="">Select Type</option>
+                    <option value="PAVER BLOCK">PAVER BLOCK</option>
+                    <option value="RCC ROAD">RCC ROAD</option>
+                    <option value="RCC ROAD & PAVER BLOCK">RCC ROAD & PAVER BLOCK</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="modal-field" style="flex: 1;">
+                <label>Est Rate</label>
+                <input type="number" id="itemEstRate" placeholder="0">
+            </div>
+            <div class="modal-field" style="flex: 1;">
+                <label>Act Rate</label>
+                <input type="number" id="itemActRate" placeholder="0">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button onclick="closeModal()" style="flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; background: #f1f5f9;">Cancel</button>
+            <button onclick="saveMasterItem()" style="flex: 2; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Master Item</button>
+        </div>
+    </div>
+</div>
+<script src="./supabse.js"></script>
+<script>
+
+
+    let selectedIDs = [];
+    let activeCategory = null; 
+    let masterItems = [];
+    let tenderDataMap = {};
+    let tenderTotals = {}; 
+
+    // --- INITIALIZATION ---
+    async function init() {
+        const { data: tenders } = await _supabase.from('tenders').select('tender_id,name_of_work').is('submission_id', null);
+        const selector = document.getElementById('idSelector');
+        selector.innerHTML = '';
+        if (tenders) {
+            tenders.forEach(t => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.innerText = t.tender_id;
+                chip.title = t.name_of_work || "No Work Name";
+                chip.onclick = () => toggleTender(t.tender_id, chip);
+                selector.appendChild(chip);
+            });
+        }
+        await refreshMasterItems();
+    }
+
+    async function refreshMasterItems() {
+        const { data: items } = await _supabase.from('Comparison_data').select('*').order('id', { ascending: true });
+        masterItems = items || [];
+        if(selectedIDs.length > 0) renderTable();
+    }
+
+    // --- SAVE NEW MASTER ITEM (From Modal) ---
+    async function saveMasterItem() {
+        const name = document.getElementById('itemName').value;
+        const unit = document.getElementById('itemUnit').value;
+        const workType = document.getElementById('itemWorkType').value;
+        const estRate = parseFloat(document.getElementById('itemEstRate').value) || 0;
+        const actRate = parseFloat(document.getElementById('itemActRate').value) || 0;
+        const pricingDept = document.getElementById('pricingDept').value;
+        const diffPct = ((estRate - actRate) / estRate) * 100;
+
+        if (!name || !unit) {
+            alert("Please fill Item Name and Unit!");
+            return;
+        }
+
+        const newItem = {
+            item_name: name,
+            unit: unit,
+            work_type: workType,
+            estimate_rate: estRate,
+            actual_cost_rate: actRate,
+            department_name: pricingDept,
+            diff_pct: diffPct
+        };
+
+        // Supabase Insert
+        const { error } = await _supabase.from('Comparison_data').insert([newItem]);
+
+        if (error) {
+            alert("Error saving item: " + error.message);
+        } else {
+            alert("✅ New Item Added to Master List!");
+            closeModal(); // Modal band karega
+            await refreshMasterItems(); // Table ko refresh karega naye item ke sath
+        }
+    }
+
+    // --- SELECTION LOGIC ---
+    async function toggleTender(id, el) {
+        if (selectedIDs.includes(id)) {
+            if (activeCategory === id) activeCategory = null;
+            selectedIDs = selectedIDs.filter(i => i !== id);
+        } else {
+            selectedIDs.push(id);
+            if (!activeCategory) activeCategory = id;
+            const { data } = await _supabase.from('tender_item_quantities').select('*').eq('tender_id', id);
+            tenderDataMap[id] = data || [];
+        }
+        refreshChipsUI();
+        renderTable();
+    }
+
+    function refreshChipsUI() {
+        const selector = document.getElementById('idSelector');
+        if(!selector) return;
+        const chips = selector.querySelectorAll('.chip');
+        chips.forEach(chip => {
+            const id = chip.innerText;
+            chip.className = 'chip';
+            if (selectedIDs.includes(id)) {
+                chip.classList.add('selected');
+                if (id === activeCategory) chip.classList.add('active-category');
+            }
+            chip.onclick = () => {
+                if (selectedIDs.includes(id)) { 
+                    activeCategory = id; 
+                    refreshChipsUI(); 
+                    renderTable(); 
+                } else { 
+                    toggleTender(id, chip); 
+                }
+            };
+        });
+    }
+
+    // --- MODAL FUNCTIONS ---
+    function closeModal() {
+        const modal = document.getElementById('itemModal');
+        if(modal) modal.style.display = 'none';
+        document.getElementById('itemName').value = ''; 
+        document.getElementById('itemUnit').value = '';
+        document.getElementById('itemEstRate').value = ''; 
+        document.getElementById('itemActRate').value = '';
+    }
+
+    async function checkPricingAndOpenModal() {
+        const pricingDropdown = document.getElementById('pricingDept');
+        const selectedPricingType = pricingDropdown ? pricingDropdown.value : '';
+        if (!selectedPricingType || selectedPricingType === "Select Pricing Type") { 
+            alert("Please select work type pricing!"); 
+            return; 
+        }
+        
+        if (activeCategory) {
+            try {
+                const { data, error } = await _supabase.from('tenders').select('work_type').eq('tender_id', activeCategory).single();
+                if (!error && data && data.work_type) {
+                    const workTypeDropdown = document.getElementById('itemWorkType');
+                    let optionExists = false;
+                    for (let i = 0; i < workTypeDropdown.options.length; i++) {
+                        if (workTypeDropdown.options[i].value === data.work_type) { optionExists = true; break; }
+                    }
+                    if (!optionExists) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = data.work_type; newOpt.innerText = data.work_type;
+                        workTypeDropdown.appendChild(newOpt);
+                    }
+                    workTypeDropdown.value = data.work_type;
+                }
+            } catch (err) { console.error("Supabase fetch exception:", err); }
+        }
+        document.getElementById('itemModal').style.display = 'flex'; 
+    }
+
+    // --- TABLE RENDERING & CALCULATION ---
+    function renderTable() {
+        if (selectedIDs.length === 0) {
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding:80px; color: #94a3b8;">Select Tender IDs to start</td></tr>';
+            document.getElementById('tableHead').innerHTML = ''; 
+            return;
+        }
+
+        let h1 = `<tr><th rowspan="2" class="sticky-col">Item Description</th><th rowspan="2">Unit</th><th rowspan="2">Est Rate</th><th rowspan="2">Act Rate</th><th rowspan="2">Diff %</th>`;
+        let h2 = `<tr>`;
+      // renderTable ke andar is section ko update karein
+selectedIDs.forEach(id => {
+    h1 += `
+        <th colspan="3" class="tender-header ${id === activeCategory ? 'active-category' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px;">
+                <span>Tender: ${id}</span>
+                <i class="fa fa-eye-slash" 
+                   style="cursor: pointer; color: #94a3b8; font-size: 14px;" 
+                   onclick="hideTender('${id}')" 
+                   title="Hide from table"></i>
+            </div>
+        </th>`;
+    h2 += `<th class="sub-header">Estimate</th><th class="sub-header">Qty</th><th class="sub-header">Actual</th>`;
+});
+        h1 += `</tr>`; h2 += `</tr>`;
+        document.getElementById('tableHead').innerHTML = h1 + h2;
+
+        let rows = '';
+        tenderTotals = {}; 
+
+        masterItems.forEach(item => {
+            const estRate = item.estimate_rate || 0;
+            const actRate = item.actual_cost_rate || 0;
+            let diffPct = estRate > 0 ? ((estRate - actRate) / estRate) * 100 : 0;
+
+            rows += `<tr>
+                <td class="sticky-col">${item.item_name}</td>
+                <td style="text-align:center">${item.unit || '-'}</td>
+                <td class="num">${estRate.toLocaleString()}</td>
+                <td class="num">${actRate.toLocaleString()}</td>
+                <td class="num" style="color: ${diffPct < 0 ? '#ef4444' : '#10b981'}; font-weight: bold;">${diffPct.toFixed(2)}%</td>`;
+
+            selectedIDs.forEach(id => {
+                if (!tenderTotals[id]) tenderTotals[id] = { est: 0, act: 0 };
+                const savedItem = (tenderDataMap[id] || []).find(q => q.item_id === item.id);
+                const qty = savedItem ? savedItem.quantity : 0;
+                const rowEst = qty * estRate; 
+                const rowAct = qty * actRate;
+                tenderTotals[id].est += rowEst; 
+                tenderTotals[id].act += rowAct;
+
+                rows += `<td class="num">${rowEst.toLocaleString()}</td>
+                        <td class="qty-cell">
+                            <input type="number" value="${qty}" class="qty-input" onchange="updateLocalQty('${id}', ${item.id}, this.value)">
+                        </td>
+                        <td class="num">${rowAct.toLocaleString()}</td>`;
+            });
+            rows += `</tr>`;
+        });
+
+        let footerTotals = `<tr class="sticky-footer-row-1"><td class="sticky-col" style="text-align:right;">GRAND TOTALS</td><td colspan="4"></td>`;
+        let footerAnalysis = `<tr class="sticky-footer-row-2"><td class="sticky-col" style="text-align:right;">MARGIN ANALYSIS</td><td colspan="4"></td>`;
+
+        selectedIDs.forEach(id => {
+            const gEst = tenderTotals[id].est;
+            const gAct = tenderTotals[id].act;
+            const inputMargin = parseFloat(document.getElementById(`m-in-${id}`)?.value) || 20;
+            const middleAmt = gAct + (gAct * (inputMargin / 100));
+            const varPct = gEst > 0 ? ((middleAmt - gEst) / gEst) * 100 : 0;
+
+            footerTotals += `<td class="num">${Math.round(gEst).toLocaleString()}</td><td></td><td class="num">${Math.round(gAct).toLocaleString()}</td>`;
+            footerAnalysis += `
+                <td class="num" id="target-${id}" style="color:#4f46e5; font-weight:bold;">${Math.round(middleAmt).toLocaleString()}</td>
+                <td class="qty-cell">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
+                        <input type="number" id="m-in-${id}" value="${inputMargin}" style="width:40px; border:1px solid #4f46e5; text-align:center;" onchange="recalcTarget('${id}', ${gEst})">
+                        <span>%</span>
+                    </div>
+                </td>
+                <td class="num" id="var-${id}" style="color:${varPct < 0 ? '#ef4444' : '#10b981'}; font-weight:bold;">${varPct.toFixed(2)}%</td>`;
+        });
+
+        document.getElementById('tableBody').innerHTML = rows + footerTotals + "</tr>" + footerAnalysis + "</tr>";
+    }
+// 1. Table se temporary hatane ke liye
+function hideTender(id) {
+    // List se hata do taaki table render na ho
+    selectedIDs = selectedIDs.filter(item => item !== id);
+    
+    // Agar wahi active tha toh use badal do
+    if (activeCategory === id) {
+        activeCategory = selectedIDs.length > 0 ? selectedIDs[0] : null;
+    }
+    
+    refreshChipsUI(); // Top chips ka color change hoga
+    renderTable();    // Table refresh hogi (Hide effect)
+}
+
+// 2. Wapas laane ke liye (Unhide)
+// Ye kaam toggleTender pehle se kar raha hai, bas ensure karein 
+// ki refreshChipsUI() sahi se chale.
+function refreshChipsUI() {
+    const selector = document.getElementById('idSelector');
+    if(!selector) return;
+    const chips = selector.querySelectorAll('.chip');
+    
+    chips.forEach(chip => {
+        const id = chip.innerText;
+        chip.className = 'chip'; // Reset classes
+        
+        if (selectedIDs.includes(id)) {
+            // Jo tender table mein dikh rahe hain (Visible)
+            chip.classList.add('selected');
+            chip.style.opacity = "1";
+            if (id === activeCategory) chip.classList.add('active-category');
+        } else {
+            // Jo tender list mein hain par table se hide kiye hain (Hidden)
+            // Inka opacity kam kar dete hain taaki pata chale ki ye hidden hain
+            chip.style.opacity = "0.5";
+            chip.style.borderStyle = "dashed";
+        }
+    });
+}
+    function recalcTarget(id, est) {
+        const m = parseFloat(document.getElementById(`m-in-${id}`).value) || 0;
+        const actual = tenderTotals[id].act;
+        const middleAmt = actual + (actual * (m / 100));
+        const varPct = est > 0 ? ((middleAmt - est) / est) * 100 : 0;
+
+        document.getElementById(`target-${id}`).innerText = Math.round(middleAmt).toLocaleString();
+        const varSpan = document.getElementById(`var-${id}`);
+        if (varSpan) {
+            varSpan.innerText = varPct.toFixed(2) + "%";
+            varSpan.style.color = varPct < 0 ? '#ef4444' : '#10b981';
+        }
+    }
+
+    function updateLocalQty(tId, itemId, val) {
+        if (!tenderDataMap[tId]) tenderDataMap[tId] = [];
+        let list = tenderDataMap[tId];
+        let item = list.find(r => r.item_id === itemId);
+        const qty = parseFloat(val) || 0;
+        if (item) item.quantity = qty;
+        else list.push({ tender_id: tId, item_id: itemId, quantity: qty });
+        renderTable(); 
+    }
+
+    // --- SAVE ALL QUANTITIES & ANALYSIS ---
+    async function saveAllChanges() {
+        const qtyUpdates = []; 
+        const summaryUpdates = [];
+        selectedIDs.forEach(id => {
+            (tenderDataMap[id] || []).forEach(row => { 
+                qtyUpdates.push({ tender_id: id, item_id: row.item_id, quantity: row.quantity }); 
+            });
+            const m = parseFloat(document.getElementById(`m-in-${id}`).value) || 0;
+            const gAct = tenderTotals[id].act;
+            const middleAmt = gAct + (gAct * (m / 100));
+            summaryUpdates.push({ tender_id: id, target_margin_pct: m, target_amount: middleAmt });
+        });
+
+        const { error: err1 } = await _supabase.from('tender_item_quantities').upsert(qtyUpdates, { onConflict: 'tender_id,item_id' });
+        const { error: err2 } = await _supabase.from('tenders').upsert(summaryUpdates, { onConflict: 'tender_id' });
+
+        if (err1 || err2) alert("Error: " + (err1?.message || err2?.message));
+        else alert("✅ Analysis & Quantities Saved!");
+    }
+
+    init();
+
+
+// Chip banane ke liye helper function
+function addTenderChip(id, name, container) {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerText = id;
+    chip.title = name || "No Work Name";
+    chip.onclick = () => toggleTender(id, chip);
+    container.appendChild(chip);
+}
+
+// --- MODAL FUNCTIONS (Updated to handle old tender data) ---
+async function checkPricingAndOpenModal() {
+    const pricingDropdown = document.getElementById('pricingDept');
+    const selectedPricingType = pricingDropdown ? pricingDropdown.value : '';
+    
+    if (!selectedPricingType || selectedPricingType === "Select Pricing Type") { 
+        alert("Please select work type pricing!"); 
+        return; 
+    }
+    
+    if (activeCategory) {
+        try {
+            // Pehle check karein tenders table mein
+            let { data, error } = await _supabase.from('tenders').select('work_type').eq('tender_id', activeCategory).single();
+            
+            // Agar wahan nahi mila, to work_on_hand mein check karein
+            if (error || !data) {
+                const { data: workData } = await _supabase.from('work_on_hand').select('work_type').eq('t_id', activeCategory).single();
+                data = workData;
+            }
+
+            if (data && data.work_type) {
+                const workTypeDropdown = document.getElementById('itemWorkType');
+                let optionExists = false;
+                for (let i = 0; i < workTypeDropdown.options.length; i++) {
+                    if (workTypeDropdown.options[i].value === data.work_type) { optionExists = true; break; }
+                }
+                if (!optionExists) {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = data.work_type; newOpt.innerText = data.work_type;
+                    workTypeDropdown.appendChild(newOpt);
+                }
+                workTypeDropdown.value = data.work_type;
+            }
+        } catch (err) { console.error("Supabase fetch exception:", err); }
+    }
+    document.getElementById('itemModal').style.display = 'flex'; 
+}
+</script>
+
+
+
+</body>
+</html>

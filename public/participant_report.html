@@ -1,235 +1,291 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Tender Analysis</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body{
-font-family:Segoe UI, Arial;
-background:#eef2f6;
-margin:0;
-padding:20px;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Tender Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #4361ee;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent-light: #eef2ff;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 40px 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            max-width: 1000px;
+            margin: auto;
+            border: 1px solid #f1f5f9;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h2 i {
+            color: var(--primary);
+            background: var(--accent-light);
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        /* Custom Select Styling */
+        .select-wrapper {
+            position: relative;
+            min-width: 200px;
+        }
+
+        select {
+            appearance: none;
+            width: 100%;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-main);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+        }
+
+        /* Loading Spinner */
+        #loading {
+            text-align: center;
+            padding: 100px 0;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 450px;
+        }
+
+        canvas {
+            width: 100% !important;
+        }
+        .back-btn {
+    background: white;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.container{
-background:#fff;
-padding:18px 20px;
-border-radius:8px;
-box-shadow:0 3px 10px rgba(68, 57, 57, 0.08);
-max-width:900px;
-margin:auto;
+.back-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    transform: translateY(-1px);
 }
 
-h2{
-font-size:20px;
-margin-bottom:12px;
+/* Header section adjustment */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 20px;
 }
 
-select{
-padding:6px 10px;
-font-size:13px;
-border-radius:5px;
-border:1px solid #ccc;
-margin-bottom:12px;
-}
-
-canvas{
-background:#f8f9fc;
-border-radius:6px;
-padding:10px;
-}
-
-
-</style>
-
+    </style>
 </head>
 <body>
-
+     <button class="back-btn" onclick="window.location.href='dashboard.html'">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </button>
 <div class="container">
+    <div class="header-section">
 
-<h2>📊 Tender Work Analysis</h2>
+        <h2><i class="fa-solid fa-chart-column"></i> Tender Work Analysis</h2>
+        
+        <div class="select-wrapper">
+            <select id="workType" onchange="loadChart()">
+                <option value="ALL">All Work Types</option>
+            </select>
+        </div>
+    </div>
 
-<select id="workType" onchange="loadChart()">
-<option value="ALL">All Work</option>
-</select>
-<div id="loading">Loading chart...</div>
-<canvas id="chart" style="display:none;"></canvas>
+    <div id="loading">
+        <i class="fas fa-circle-notch fa-spin"></i> Fetching data...
+    </div>
+
+    <div class="chart-container">
+        <canvas id="chart" style="display:none;"></canvas>
+    </div>
 </div>
-
+<script src="./supabse.js"></script>
 <script>
 
-const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
 
+    let chart;
 
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    async function loadChart() {
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("chart").style.display = "none";
 
-let chart;
+        let workType = document.getElementById("workType").value;
+        let { data, error } = await client.from("tender_result").select("*").eq("rank", "L1");
 
-async function loadChart(){
+        if (error) { console.log(error); return; }
 
-let workType = document.getElementById("workType").value;
+        if (workType != "ALL") {
+            data = data.filter(row => row.work_type === workType);
+        }
 
-let {data,error} = await supabaseClient
-.from("tender_result")
-.select("*")
-.eq("rank","L1");
+        let companyData = {};
+        data.forEach(row => {
+            let company = row.company_name;
+            let amount = Number(row.final_amount) || 0;
+            let percent = Number(row.bid_price) || 0;
 
-if(error){
-console.log(error);
-return;
-}
+            if (!companyData[company]) {
+                companyData[company] = { amount: 0, count: 0, percentTotal: 0, latestPercent: percent };
+            }
+            companyData[company].amount += amount;
+            companyData[company].count += 1;
+            companyData[company].percentTotal += percent;
+            companyData[company].latestPercent = percent;
+        });
 
-// WORK TYPE FILTER
-if(workType!="ALL"){
-data=data.filter(row=>row.work_type===workType);
-}
+        let labels = [];
+        let amounts = [];
+        let info = [];
 
-let companyData={};
+        for (let c in companyData) {
+            let count = companyData[c].count;
+            let avg = (companyData[c].percentTotal / count).toFixed(1);
+            let latest = companyData[c].latestPercent;
+            labels.push(c);
+            amounts.push(companyData[c].amount);
+            info.push(`Work: ${count}\nAvg: ${avg}%\nLatest: ${latest}%`);
+        }
 
-data.forEach(row=>{
+        if (chart) { chart.destroy(); }
 
-let company=row.company_name;
-let amount=Number(row.final_amount)||0;
-let percent=Number(row.bid_price)||0;
+        // Logic maintained, only appearance improved
+        Chart.register({
+            id: 'countLabel',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                chart.data.datasets[0].data.forEach((value, index) => {
+                    const meta = chart.getDatasetMeta(0).data[index];
+                    ctx.save();
+                    ctx.fillStyle = "#1e293b";
+                    ctx.font = "bold 12px 'Plus Jakarta Sans'";
+                    ctx.textAlign = "center";
+                    let text = chart.config.data.info[index];
+                    let lines = text.split("\n");
+                    lines.forEach((line, i) => {
+                        ctx.fillText(line, meta.x, meta.y - 65 + (i * 18));
+                    });
+                    ctx.restore();
+                });
+            }
+        });
 
-if(!companyData[company]){
-companyData[company]={
-amount:0,
-count:0,
-percentTotal:0,
-latestPercent:percent
-};
-}
+        chart = new Chart(document.getElementById("chart"), {
+            type: "bar",
+            data: {
+                labels: labels,
+                info: info,
+                datasets: [{
+                    data: amounts,
+                    backgroundColor: "rgba(67, 97, 238, 0.8)",
+                    hoverBackgroundColor: "rgba(67, 97, 238, 1)",
+                    borderRadius: 12,
+                    barThickness: 50,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 70 } },
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "#f1f5f9" },
+                        ticks: { color: "#64748b", font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: "#1e293b", font: { size: 11, weight: '600' } }
+                    }
+                }
+            }
+        });
 
-companyData[company].amount+=amount;
-companyData[company].count+=1;
-companyData[company].percentTotal+=percent;
-
-// latest %
-companyData[company].latestPercent=percent;
-
-});
-
-let labels=[];
-let amounts=[];
-let info=[];
-
-for(let c in companyData){
-
-let count=companyData[c].count;
-let avg=(companyData[c].percentTotal/count).toFixed(0);
-let latest=companyData[c].latestPercent;
-
-labels.push(c);
-amounts.push(companyData[c].amount);
-
-info.push(
-"Work: "+count+
-"\nAvg: "+avg+"%"+
-"\nLatest: "+latest+"%"
-);
-
-}
-
-if(chart){
-chart.destroy();
-}
-
-Chart.register({
-id: 'countLabel',
-afterDatasetsDraw(chart) {
-
-const {ctx} = chart;
-
-chart.data.datasets[0].data.forEach((value,index)=>{
-
-const meta = chart.getDatasetMeta(0).data[index];
-
-ctx.save();
-ctx.fillStyle = "black";
-ctx.font = "bold 14px Arial";
-ctx.textAlign = "center";
-
-let text = chart.config.data.info[index];
-
-let lines = text.split("\n");
-
-lines.forEach((line,i)=>{
-ctx.fillText(line, meta.x, meta.y - 60 + (i*18));
-});
-
-});
-
-}
-});
-
-chart=new Chart(document.getElementById("chart"),{
-   
-
-
-type:"bar",
-
-data:{
-labels:labels,
-info: info,
-datasets:[{
-data:amounts,
-backgroundColor:"#4e79d9",
-borderRadius:10,
-barThickness:60,
-maxBarThickness:60
-}]
-},
-
-options: {
-  responsive: true,
-  layout: {
-    padding: { top: 50 }
-  },
-  plugins: {
-    legend: { display: false }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      grace: '20%'
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("chart").style.display = "block";
     }
-  }
-}
-});
- document.getElementById("loading").style.display="none"
-document.getElementById("chart").style.display="block"
 
-}
-async function loadWorkTypes(){
+    async function loadWorkTypes() {
+        let { data, error } = await client.from("work_type").select("work_name");
+        if (error) { console.log(error); return; }
+        let dropdown = document.getElementById("workType");
+        data.forEach(row => {
+            let option = document.createElement("option");
+            option.value = row.work_name;
+            option.textContent = row.work_name;
+            dropdown.appendChild(option);
+        });
+    }
 
-let {data,error} = await supabaseClient
-.from("work_type")   // table name
-.select("work_name");
-
-if(error){
-console.log(error);
-return;
-}
-
-let dropdown=document.getElementById("workType");
-
-data.forEach(row=>{
-
-let option=document.createElement("option");
-option.value=row.work_name;
-option.textContent=row.work_name;
-
-dropdown.appendChild(option);
-
-});
-
-}
-loadWorkTypes();
-loadChart();
-
+    loadWorkTypes();
+    loadChart();
 </script>
 </body>
 </html>

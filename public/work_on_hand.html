@@ -1,913 +1,878 @@
-
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work On Hand | Premium Management</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 
-<title>Work On Hand</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #f5f3ff;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-body: #f8fafc;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;500;600&display=swap" rel="stylesheet">
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0; padding: 20px;
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+        }
 
-<style>
-body{
-font-family:'Baloo Bhai 2', cursive;
-margin: 10px;;
-background:#f5f7fb; 
+        /* --- TOAST NOTIFICATION STYLE --- */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 10000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        /* ------------------------------- */
+
+        .header-container { display: flex; gap: 20px; margin-bottom: 25px; align-items: stretch; }
+        
+        .summary-card {
+            min-width: 260px;
+            background: var(--white);
+            padding: 20px; border-radius: 12px; 
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .summary-card div { 
+            display: flex; justify-content: space-between; 
+            padding: 6px 0; border-bottom: 1px solid #f1f5f9; 
+            font-size: 13px; color: var(--text-muted); font-weight: 500;
+        }
+        .summary-card div:last-child { border: none; }
+        .summary-card b { font-size: 15px; color: var(--primary); }
+
+        #summaryGrid {
+    display: flex;
+    flex-wrap: nowrap; /* Ya wrap agar aap niche line chahte hain */
+    gap: 15px;
+    align-items: stretch; /* Saare cards ki height ek jaisi rakhega */
+    overflow-x: auto; /* Agar cards zyada ho jayein to scroll ho sake */
+    padding: 10px 0;
+}
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+        .stat-item { 
+            background: #fafafa; padding: 10px; border-radius: 10px; 
+            border: 1px solid var(--border); transition: 0.2s;
+            min-height: 80px; /* Ek minimum height fix kar do */
+    flex: 0 0 auto;
+        }
+        .stat-item label { font-size: 9px; color: var(--secondary); font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 3px; }
+        .stat-item span { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+
+        .table-responsive { 
+            background: var(--white); border-radius: 16px; 
+            box-shadow: var(--shadow); border: 1px solid var(--border); 
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+        th { 
+            background: #f8fafc; padding: 14px 12px; text-align: left; 
+            font-weight: 700; color: var(--text-muted); 
+            border-bottom: 2px solid var(--border);
+            text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px;
+        }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; overflow: hidden; }
+
+        input, select { 
+            border: 1px solid var(--border); border-radius: 6px; 
+            padding: 6px 10px; font-family: inherit; outline: none; 
+            width: 100%; box-sizing: border-box; transition: 0.2s; 
+            background: #fff; font-size: 12px;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .date-input { text-align: center; color: var(--primary); font-weight: 600; }
+
+        .unique-name { 
+            font-weight: 700; color: var(--primary); border: none; 
+            background: transparent; padding: 0; font-size: 14px;
+            cursor: pointer; text-align: left;
+        }
+        .unique-name:hover { text-decoration: underline; }
+        .unique-wrapper { position: relative; }
+        .hover-work {
+            display: none; position: absolute; background: #1e293b; color: white;
+            padding: 12px; border-radius: 8px; width: 350px; z-index: 9999;
+            top: 30px; left: 0; white-space: normal;
+        }
+        .unique-wrapper:hover .hover-work { display: block; }
+
+        .modern-doc-stack { display: flex; gap: 5px; align-items: center; justify-content: center; }
+        .doc-icon-btn { 
+            width: 32px; height: 32px; border-radius: 6px; 
+            background: #f1f5f9; border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; color: var(--secondary); cursor: pointer;
+        }
+        .doc-icon-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+        .filled-doc { color: var(--primary); background: var(--primary-light); border-color: #c7d2fe; }
+
+        .modern-delete-badge {
+            position: absolute; top: -5px; right: -5px;
+            background: var(--danger); color: white; width: 14px; height: 14px;
+            border-radius: 50%; font-size: 9px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid white; cursor: pointer;
+        }
+
+        .item-chip { 
+            background: #f1f5f9; border: 1px solid var(--border); 
+            padding: 2px 8px; border-radius: 5px; font-size: 10px; 
+            display: inline-flex; align-items: center; gap: 4px; margin: 2px;
+            font-weight: 600;
+        }
+        .add-btn { 
+            background: var(--primary); color: white; border: none; 
+            border-radius: 6px; width: 30px; height: 28px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .dynamic-info { 
+            font-size: 10px; color: var(--primary); font-weight: 700; 
+            background: var(--primary-light); padding: 3px 8px; 
+            border-radius: 5px; margin-top: 4px; display: inline-flex; 
+            align-items: center; gap: 4px;
+        }
+        .doc-row {
+    background: #fdfdff;
+    display: none; /* Initially hide */
+}
+.expand-btn {
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: 0.3s;
+}
+.expand-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+.doc-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    transition: 0.3s;
+    width: 100px;
 }
 
-/* TITLE */
-
-h1{
-text-align:center;
-margin:10px 0;
+/* File upload hone ke baad ye class apply hogi */
+.doc-item.uploaded {
+    border-style: solid;
+    border-color: #3b82f6;
+    background: #eff6ff;
 }
 
-/* HEADER CARDS */
-
-.header-cards{
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:20px;
-margin-bottom:15px;
+.doc-name {
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    color: #64748b;
+    word-break: break-all;
+    max-height: 24px;
+    overflow: hidden;
 }
 
-.card{
-flex:1;
-background:white;
-padding:15px;
-border-radius:10px;
-box-shadow:0 4px 10px rgba(0,0,0,0.08);
-text-align:center;
+.doc-item.uploaded .doc-name {
+    color: #1e40af;
 }
 
-.card h2{
-margin:0;
-font-size:26px;
-color:#4f7fa3;
+.doc-action-btn {
+    cursor: pointer;
+    font-size: 18px;
+    color: #94a3b8;
 }
 
-.card p{
-margin:5px 0 0;
-color:#777;
+.uploaded .doc-action-btn {
+    color: #3b82f6;
 }
-
-/* TABLE */
-
-table{
-width:100%;
-border-collapse:collapse;
-background:white;
-box-shadow:0 4px 10px rgba(0,0,0,0.08);
-border-radius:10px;
-overflow:hidden;
-font-size:14px;
-font-weight:500;
-}
-
-/* TABLE HEADER */
-
-th{
-background:#4f7fa3;
-color:white;
-padding:10px;
-font-weight:600;
-}
-
-/* TABLE CELLS */
-
-td{
-padding:10px;
-border-bottom:1px solid #eee;
-vertical-align:middle;
-}
-
-/* ROW HOVER */
-
-tr:hover{
-background:#f5f9fd;
-}
-
-/* COLUMN WIDTH CONTROL */
-th:nth-child(3),
-td:nth-child(3){
-width:50px;
-}
-th:nth-child(7),
-td:nth-child(7){
-width:150px;
-}
-th:nth-child(8),
-td:nth-child(8){
-width:150px;
-}
-
-th:nth-child(9),
-td:nth-child(9){
-width:140px;
-}
-
-th:nth-child(11),
-td:nth-child(11){
-width:100px;
-}
-
-/* INPUT STYLE */
-
-input{
-width:100%;
-padding:6px;
-border:1px solid #ccc;
-border-radius:5px;
-box-sizing:border-box;
-}
-
-input[type="number"]{
-text-align:center;
-}
-
-/* UNIQUE NAME INPUT */
-
-.unique-name{
-width:240px;
-padding:6px;
-box-sizing:border-box;
-font-size:14px;
-font-weight:500;
-}
-
-/* DATE INPUT */
-
-
-.date-input{
-width:95px;
-padding:6px;
-text-align:center;
-}
-/* WORK NAME */
-
-.name-work{
-max-width:260px;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-}
-
-/* WORK TYPE */
-
-td:nth-child(4){
-white-space:nowrap;
-}
-
-td:nth-child(5){
-white-space:nowrap;
-}
-
-/* AMOUNT */
-
-.amount{
-white-space:nowrap;
-font-weight:600;
-}
-
-/* FILE UPLOAD */
-
-.upload-wrapper{
-display:flex;
-align-items:center;
-}
-
-.upload-btn{
-background:#4f7fa3;
-color:white;
-padding:6px 12px;
-border-radius:5px;
-cursor:pointer;
-font-size:13px;
-border:none;
-}
-
-.upload-btn:hover{
-background:#3f6f8e;
-}
-
-/* FILE BOX */
-
-.file-box{
-display:flex;
-align-items:center;
-gap:6px;
-background:#eef2f7;
-padding:4px 8px;
-border-radius:5px;
-font-size:12px;
-}
-
-.file-name{
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-max-width:160px;
-display:inline-block;
-vertical-align:middle;
-}
-
-.delete-file{
-cursor:pointer;
-color:#d63031;
-font-weight:bold;
-}
-
-/* DOCUMENT CELL */
-
-.doc-cell{
-min-width:180px;
-}
-
-/* MAJOR ITEM SELECT */
-
-.item-input-row{
-display:flex;
-gap:5px;
-margin-top:5px;
-}
-
-.qty-input{
-width:60px;
-padding:4px;
-}
-
-.unit-select{
-width:70px;
-}
-
-.item-list{
-margin-bottom:4px;
-font-size:13px;
-}
-
-.item-row{
-background:#eef3f9;
-padding:4px 6px;
-border-radius:4px;
-margin-bottom:2px;
-}
-.major-select{
-width:100px;
-height:28px;
-padding:2px 6px;
-font-size:13px;
-border:1px solid #c5cbd3;
-border-radius:3px;
-background:#fff;
-outline:none;
-cursor:pointer;
-}
-
-.major-select:hover{
-border-color:#7aa7d9;
-}
-
-.major-select:focus{
-border-color:#4a90e2;
-}
-td input{
-padding:6px;
-border:1px solid #ccc;
-border-radius:5px;
-}
-input,
-select,
-textarea{
-font-family:'Baloo Bhai 2', sans-serif;
-}
-.item-row{
-display:flex;
-justify-content:space-between;
-background:#eef3f9;
-padding:5px 8px;
-border-radius:5px;
-margin-bottom:3px;
-}
-
-.delete-item{
-cursor:pointer;
-color:#e74c3c;
-font-weight:bold;
-}
-</style>
-
+    </style>
 </head>
-
 <body>
-<div class="header-cards">
 
-<div class="card">
-<h2 id="totalTender">8</h2>
-<p>Total Tender</p>
-</div>
+    <!-- Toast Element -->
+    <div id="toast"><span class="material-icons-outlined" id="toastIcon">check_circle</span> <span id="toastMsg">Data Updated Successfully!</span></div>
 
-<div class="card title-card">
-<h2>Work On Hand</h2>
-</div>
+    <div class="header-container">
+        <div class="summary-card">
+            <div><span>Total Works</span> <b id="totalTender">0</b></div>
+            <div><span>Total Amount</span> <b id="totalAmount">₹ 0</b></div>
+            <div><span>Locations</span> <b id="totalLocation">0</b></div>
+        </div>
+        <div id="itemsContainer">
+            <div class="items-grid" id="summaryGrid"></div>
+        </div>
+    </div>
 
-<div class="card">
-<h2 id="totalAmount">₹0</h2>
-<p>Total Amount</p>
-</div>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 90px;">Index</th>
+                    <th style="width: 230px;">Work Details</th>
+                    <th style="width: 210px;">Agreement & RM</th> 
+                    <th style="width: 140px;">Bank Guarantee</th>
+                    <th style="width: 140px;">Timeline</th>
+                    <th style="width: 260px;">Major Items</th>
+                    <th style="width: 80px; text-align: center;">Documents Handled</th> 
+                     
+                </tr>
+            </thead>
+            <tbody id="workTable"></tbody>
+        </table>
+    </div>
+<script src="./supabse.js"></script>
+    <script>
+   
 
-</div>
+        let majorItems = [];
 
+        // --- Helper: Show Toast ---
+        function showToast(msg, type = "success") {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toastMsg");
+            const toastIcon = document.getElementById("toastIcon");
+            
+            toastMsg.innerText = msg;
+            toast.style.backgroundColor = type === "success" ? "#10b981" : "#ef4444";
+            toastIcon.innerText = type === "success" ? "check_circle" : "error_outline";
+            
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
 
-<table>
-
-<thead>
-
-<tr>
-<th>Notice No</th>
-<th>Unique Name</th>
-<th>Dept Name</th>
-<th>Name Of Work</th>
-<th>Agreement Details</th>
-
-<th>Work Type</th>
-<th>Time Limit</th>
-<th>Final Amount</th>
-<th>Bank Guarantee Details</th>
-<th>Retention Money</th>
-<th>Tender Document</th>
-<th>Major Item</th>
-<th>Start Date</th>
-<th>End Date</th>
-
-</tr>
-
-</thead>
-
-<tbody id="workTable"></tbody>
-
-</table>
-
-
-<script>
-
-const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-function getENumber(notice){
-if(!notice) return "";
-const parts = notice.split("/");
-return parts[1] ? parts[1].trim() : "";
+ async function init() {
+    // Sabse pehle major items load karein
+    const { data: mItems } = await client.from("Comparison_data").select("item_name");
+    majorItems = mItems || [];
+    
+    // Phir work data load karein
+    await loadWork();
 }
 
-async function loadWork(){
+async function loadWork() {
+    // 1. Fetch L1 results for Aniraj Builders
+    const { data: result, error: resError } = await client
+        .from("tender_result")
+        .select("*")
+        .eq("rank", "L1")
+        .eq("company_name", "ANIRAJ BUILDERS");
 
-/* STEP 1 : tender_result se L1 ANIRAJ BUILDERS */
+    if (resError) {
+        console.error("Result Fetch Error:", resError);
+        return;
+    }
 
-const {data:result,error} = await supabaseClient
-.from("tender_result")
-.select("tender_id,final_amount,work_type")
-.eq("rank","L1")
-.eq("company_name","ANIRAJ BUILDERS");
+    const ids = result.map(r => r.tender_id);
+    
+    // 2. Fetch tender details
+    const { data: tenders } = await client
+        .from("tenders")
+        .select("*, work_location, time_limit")
+        .in("tender_id", ids);
 
-if(error){
-console.log(error);
-return;
+    const tenderMap = {}; 
+    tenders.forEach(t => tenderMap[t.tender_id] = t);
+
+    // --- CRITICAL STEP: Sync missing records to work_on_hand ---
+    await syncWorkOnHand(result, tenderMap);
+
+    // 3. Re-fetch work_on_hand after sync to get latest data
+    const { data: workData } = await client.from("work_on_hand").select("*");
+    const workMap = {}; 
+    workData.forEach(w => workMap[w.t_id] = w);
+
+    // 4. Finally render the table
+    renderTable(result, tenderMap, workMap);
+    generateHeaderItemTotals();
+}
+    function renderTable(result, tenderMap, workMap) {
+    const tbody = document.getElementById("workTable");
+    tbody.innerHTML = "";
+    let tAmt = 0; let tLoc = 0;
+
+    result.forEach(row => {
+        const tender = tenderMap[row.tender_id];
+        const eNo = tender?.tender_notice_no?.split("/")[1]?.trim() || "";
+        const work = workMap[eNo] || {};
+        const fullWorkName = tender?.name_of_work || "";
+        
+        // Unique ID for the collapsible row
+        const docRowId = `docs_${eNo.replace(/\W/g, '')}`; 
+        
+        tAmt += Number(row.final_amount || 0);
+        tLoc += Number(tender?.work_location || 0);
+
+        tbody.innerHTML += `
+        <tr>
+            <td>
+                <div style="background:#f8fafc; padding:8px; border-radius:10px; text-align:center; border: 1px solid var(--border);">
+                    <b style="color:var(--secondary)">${work.index_no ? work.index_no.split("/")[0] : "-"}</b><br>
+                    <small style="color:var(--text-dark); font-weight:700">${eNo}</small>
+                </div>
+            </td>
+            <td>
+                <div class="unique-wrapper">
+                    <input type="text" class="unique-name" value="${work.uniq_name || ""}" placeholder="Unique Name" onchange="saveField('${eNo}','uniq_name',this.value)">
+                    <div class="hover-work">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <strong>Full Work Details:</strong>
+                            <span class="material-icons-outlined" style="font-size:14px; cursor:pointer;" onclick="copyToClipboard('${fullWorkName.replace(/'/g, "\\'")}', this)">content_copy</span>
+                        </div>
+                        ${fullWorkName}
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">🏗 ${row.work_type}</div>
+                    <div style="font-weight:700; color:var(--text-dark); margin-top:2px">₹ ${Number(row.final_amount).toLocaleString('en-IN')}</div>
+                    <div class="dynamic-info" style="justify-content:center">Location no: ${tender?.work_location || 'N/A'}</div>
+                </div>
+            </td>
+            <td>
+                <input type="text" placeholder="Agreement No/Details" value="${work.agreement_details||""}" onchange="saveField('${eNo}','agreement_details',this.value)">
+                <div style="margin-top:6px">
+                    <small style="color:var(--secondary); font-size:9px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:2px;">Retention Money (RM)</small>
+                    <input type="number" placeholder="Enter RM Amount" value="${work.deposit_details||""}" onchange="saveField('${eNo}','deposit_details',this.value)">
+                </div>
+            </td>
+            <td>
+                <div style="display:flex; flex-direction:column; gap:4px">
+                    <input type="number" placeholder="BG Amount" value="${work.bg_etails||""}" onchange="saveField('${eNo}','bg_etails',this.value)">
+                    <input type="text" placeholder="BG Number" value="${work.bg_no||""}" onchange="saveField('${eNo}','bg_no',this.value)">
+                    <input type="text" placeholder="Expiry DD/MM/YYYY" class="date-input" value="${work.bg_date ? formatDate(work.bg_date) : ""}" oninput="formatDateInput(this)" onchange="saveDate('${eNo}',this.value,'bg')">
+                </div>
+            </td>
+            <td>
+                <div style="display:flex; flex-direction:column; gap:4px">
+                    <input type="text" placeholder="Start DD/MM/YY" class="date-input" value="${work.work_start_date ? formatDate(work.work_start_date) : ""}" oninput="formatDateInput(this)" onchange="saveDate('${eNo}',this.value,'start')">
+                    <input type="text" placeholder="End DD/MM/YY" class="date-input" value="${work.work_end_date ? formatDate(work.work_end_date) : ""}" oninput="formatDateInput(this)" onchange="saveDate('${eNo}',this.value,'end')">
+                    <div class="dynamic-info" style="justify-content:center"><span class="material-icons-outlined" style="font-size:11px">timer</span> Limit: ${tender?.time_limit || 'N/A'}</div>
+                </div>
+            </td>
+            <td>
+                <div id="itemList_${eNo}" style="margin-bottom:6px; min-height: 20px;"></div>
+                <div style="display:flex; gap:4px">
+                    <select id="item_${eNo}" style="flex:1">
+                        <option value="">Select Item</option>
+                        ${majorItems.map(i => `<option value="${i.item_name}">${i.item_name}</option>`).join("")}
+                    </select>
+                    <input type="number" id="qty_${eNo}" placeholder="Qty" style="width:55px">
+                    <select id="unit_${eNo}" style="width:70px">
+                        <option>BRASS</option><option>NOS</option><option>MTR</option><option>TON</option><option>CUMT</option>
+                    </select>
+                    <button class="add-btn" onclick="addItem('${eNo}')">+</button>
+                </div>
+            </td>
+            <td style="vertical-align: middle; text-align: center; border-left: 1px dashed var(--border);">
+                <button class="expand-btn" onclick="toggleDocs('${docRowId}')">
+                    <span class="material-icons-outlined" style="font-size:16px">folder_open</span>
+                    DOC HANDLE
+                </button>
+            </td>
+        </tr>
+        
+        <tr id="${docRowId}" class="doc-row" style="display:none;">
+            <td colspan="7" style="padding: 15px; background: #fcfcfd; border-bottom: 2px solid var(--primary-light);">
+                <div style="display: flex; justify-content: space-around; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <div>
+                        <label style="font-size:10px; font-weight:800; color:var(--secondary); display:block; margin-bottom:10px;">OFFICE DOCUMENTS (READ ONLY)</label>
+                        <div class="modern-doc-stack">
+                            ${renderStaticDoc('NIT', getUrl(tender?.tender_nit), row.tender_id, 'tender_nit')}
+                            ${renderStaticDoc('Estimate', getUrl(tender?.estimate_document), row.tender_id, 'estimate_document')}
+                            ${renderStaticDoc('Other', getUrl(tender?.other_document), row.tender_id, 'other_document')}
+                        </div>
+                    </div>
+                    <div style="width: 1px; background: var(--border);"></div>
+                    <div>
+                        <label style="font-size:10px; font-weight:800; color:var(--secondary); display:block; margin-bottom:10px;">UPLOADED WORK DOCUMENTS (MAX 3 EACH)</label>
+                        <div class="modern-doc-stack">
+                            ${renderUploadDoc(eNo, 'loa_document', work.loa_document, 'LOA')}
+                            ${renderUploadDoc(eNo, 'tender_document', work.tender_document, 'Tender')}
+                            ${renderUploadDoc(eNo, 'work_order_document', work.work_order_document, 'Order')}
+                            ${renderUploadDoc(eNo, 'work_complete_3a', work.work_complete_3a, '3A')}
+                              ${renderUploadDoc(eNo, 'bg_doc', work.bg_doc, 'Bank Guarantee')}
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>`;
+        
+        // Timeout ensures the DOM is ready for loadItems
+        setTimeout(() => loadItems(eNo), 0);
+    });
+
+    document.getElementById("totalTender").innerText = result.length;
+    document.getElementById("totalAmount").innerText = "₹ " + tAmt.toLocaleString('en-IN');
+    document.getElementById("totalLocation").innerText = tLoc;
 }
 
-/* STEP 2 : tender ids */
+// Ye function toggle karne ke liye
+function toggleDocs(id) {
+    const row = document.getElementById(id);
+    row.style.display = (row.style.display === "none" || row.style.display === "") ? "table-row" : "none";
+}
+async function uploadMultipleFiles(event, id, col) {
+    const files = event.target.files;
+    if (files.length === 0) return;
 
-const ids = result.map(r => r.tender_id);
+    // 1. Pehle database se purana data (array) mangwayein
+    const { data: currentRecord } = await client
+        .from("work_on_hand")
+        .select(col)
+        .eq("t_id", id)
+        .single();
 
-/* STEP 3 : tenders table */
+    let currentUrls = currentRecord?.[col] || [];
+    
+    // Agar data string hai toh array mein convert karein
+    if (!Array.isArray(currentUrls)) {
+        currentUrls = currentUrls && currentUrls !== "null" ? [currentUrls] : [];
+    }
 
-const {data:tenders,error:tError} = await supabaseClient
-.from("tenders")
-.select("tender_id,tender_notice_no,name_of_work,time_limit,department_name")
-.in("tender_id",ids);
+    for (let i = 0; i < files.length; i++) {
+        // Limit: 3 files se zyada upload na ho
+        if (currentUrls.length >= 3) {
+            showToast("Maximum 3 files allowed", "error");
+            break;
+        }
 
-if(tError){
-console.log(tError);
-return;
+        const file = files[i];
+        const cleanFileName = file.name.replace(/\s+/g, '_');
+        const fName = `${id}_${col}_${Date.now()}_${i}_${cleanFileName}`;
+
+        // Storage mein upload
+        const { error: uploadError } = await client.storage
+            .from("work_on_hand_document")
+            .upload(fName, file);
+
+        if (!uploadError) {
+            const { data: urlData } = client.storage
+                .from("work_on_hand_document")
+                .getPublicUrl(fName);
+            
+            // Naya URL array mein add karein
+            currentUrls.push(urlData.publicUrl);
+        } else {
+            console.error("Upload Error:", uploadError);
+        }
+    }
+
+    // 2. Poora updated array wapas database mein save karein
+    const { error: dbError } = await client
+        .from("work_on_hand")
+        .update({ [col]: currentUrls }) 
+        .eq("t_id", id);
+
+    if (!dbError) {
+        showToast("Documents Uploaded!");
+        loadWork(); // Table refresh
+    }
+}
+     async function saveField(id, col, val) { 
+    const { error } = await client
+        .from("work_on_hand")
+        .upsert(
+            { t_id: id, [col]: val }, 
+            { onConflict: 't_id' } // Yeh ensure karta hai ki agar t_id exists hai to update kare
+        ); 
+
+    if(!error) {
+        showToast("Field Updated!");
+        // Data update hone ke baad header totals refresh karein agar zaroorat ho
+        if(col === 'final_amount') loadWork(); 
+    } else {
+        console.error("Supabase Error:", error);
+        showToast("Error: " + error.message, "error");
+    }
+}
+     async function saveDate(id, val, type) { 
+    const parts = val.split("/"); 
+    if(parts.length !== 3) return; 
+    
+    // YYYY-MM-DD format for Postgres
+    const dbDate = `${parts[2]}-${parts[1]}-${parts[0]}`; 
+    let col = (type === 'start') ? 'work_start_date' : (type === 'end') ? 'work_end_date' : 'bg_date';
+
+    const { error } = await client
+        .from("work_on_hand")
+        .upsert(
+            { t_id: id, [col]: dbDate }, 
+            { onConflict: 't_id' }
+        ); 
+
+    if(!error) {
+        showToast("Date Updated!");
+    } else {
+        showToast("Date Error: " + error.message, "error");
+    }
+}
+async function syncWorkOnHand(result, tenderMap) {
+    const syncPromises = result.map(async (row) => {
+        const tender = tenderMap[row.tender_id];
+        if (!tender) return;
+
+        // Tender Notice No se ID nikalna (e.g., 906)
+    const notice = tender?.tender_notice_no;
+
+let eNo = null;
+
+if (notice) {
+  const lines = notice.split("\n"); // new line split
+  const secondLine = lines[1] || ""; // "E-378 / 2025-26"
+
+  eNo = secondLine.split("/")[0]?.trim(); // "E-378"
 }
 
-/* STEP 4 : work_on_hand table */
+if (!eNo) return;
 
-const {data:workData} = await supabaseClient
-.from("work_on_hand")
-.select("*");
+console.log(eNo);
+        // Check if record exists
+        const { data: existing } = await client
+            .from("work_on_hand")
+            .select("t_id")
+            .eq("t_id", eNo)
+            .maybeSingle();
 
-/* work map */
+        // Agar database mein entry nahi hai, toh insert karein
+        if (!existing) {
+            console.log(`Syncing new tender to Work On Hand: ${eNo}`);
+            return client.from("work_on_hand").insert([{
+                t_id: eNo,
+                uniq_name: "",
+                agreement_details: "",
+                deposit_details: "",
+                bg_etails: "", // Aapke column name ke hisaab se
+                work_start_date: null,
+                work_end_date: null
+            }]);
+        }
+    });
 
-const workMap={};
-workData.forEach(w=>{
-workMap[w.t_id]=w;
-});
+    await Promise.all(syncPromises);
+}
+        async function addItem(eNo) { 
+            const item = document.getElementById(`item_${eNo}`).value; 
+            const qty = document.getElementById(`qty_${eNo}`).value; 
+            const unit = document.getElementById(`unit_${eNo}`).value; 
+            if(!item || !qty) return; 
+            const { error } = await client.from("item_detail").insert([{ t_id: eNo, item_name: item, quantity: qty, unit: unit }]); 
+            if(!error) {
+                showToast("Item Added!");
+                loadItems(eNo); 
+                generateHeaderItemTotals(); 
+            }
+        }
 
-/* tender map */
-
-const tenderMap={};
-tenders.forEach(t=>{
-tenderMap[t.tender_id]=t;
-});
-
-/* STEP 5 : saveWorkOnHand */
-
-await saveWorkOnHand(result,tenderMap);
-
-/* STEP 6 : show data */
-
-showWork(result,tenderMap,workMap);
-
+        // Rest of the existing helper functions (Copy, Date format, delete etc.)
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("Copied to clipboard!");
+                const icon = btn.querySelector('span');
+                if(icon) {
+                   icon.innerText = "check";
+                   setTimeout(() => { icon.innerText = "content_copy"; }, 1500);
+                }
+            });
+        }
+        function handleFileAction(url) {
+    if (!url) return;
+    // Naye tab mein open karne ke liye (View)
+    window.open(url, '_blank');
 }
 
-async function saveWorkOnHand(result,tenderMap){
+function downloadFile(url, label) {
+    fetch(url)
+        .then(resp => resp.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `${label}_Document.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(() => alert('Download failed!'));
+}
+        
+        async function loadItems(eNo) { 
+            const { data } = await client.from("item_detail").select("*").eq("t_id", eNo); 
+            const container = document.getElementById(`itemList_${eNo}`); 
+            if(!container) return; 
+            container.innerHTML = (data || []).map(row => `
+                <span class="item-chip">
+                    ${row.item_name}: ${row.quantity} 
+                    <span style="cursor:pointer; color:var(--danger); font-size:12px;" onclick="deleteItem(${row.id},'${eNo}')">×</span>
+                </span>`).join(""); 
+        }
 
-const {data:existing}=await supabaseClient
-.from("work_on_hand")
-.select("t_id");
+        async function deleteItem(id, eNo) { 
+            await client.from("item_detail").delete().eq("id", id); 
+            showToast("Item Removed!", "error");
+            loadItems(eNo); 
+            generateHeaderItemTotals(); 
+        }
 
-const existingIds=existing.map(e=>e.t_id);
+        async function deleteFile(id, col) { 
+            await client.from("work_on_hand").update({ [col]: null }).eq("t_id", id); 
+            showToast("Document Deleted!", "error");
+            loadWork(); 
+        }
+function renderUploadDoc(eNo, field, value, label) {
+    // Agar value array hai toh pehli file dikhayein, warna string use karein
+    const files = Array.isArray(value) ? value : (value ? [value] : []);
+    const isUploaded = files.length > 0;
 
-const newRows=result
-.filter(r=>{
-const notice=tenderMap[r.tender_id]?.tender_notice_no;
-const eNo=getENumber(notice);
-return !existingIds.includes(eNo);
-})
-.map(r=>{
-
-const notice=tenderMap[r.tender_id]?.tender_notice_no;
-
-return{
-
-t_id:getENumber(notice),
-
-name_of_work:tenderMap[r.tender_id]?.name_of_work || null,
-
-department_name:tenderMap[r.tender_id]?.department_name || null,
-approve_amount:r.final_amount,
-
-time_limit:tenderMap[r.tender_id]?.time_limit || null
-
+    return `
+    <div class="doc-item" style="border: 1px ${isUploaded ? 'solid #3b82f6' : 'dashed #cbd5e1'}; padding: 8px; border-radius: 8px; width: 110px; background: ${isUploaded ? '#eff6ff' : 'transparent'};">
+        <span style="font-size: 10px; font-weight: 700; color: #64748b; display:block; text-align:center;">${label}</span>
+        <div style="display:flex; gap:4px; justify-content:center; margin-top:5px;">
+            ${isUploaded ? 
+                files.map(file => `
+                    <span class="material-icons-outlined" style="cursor:pointer; font-size:18px; color:#3b82f6" onclick="window.open('${getUrl(file)}', '_blank')">description</span>
+                `).join('') 
+                : `<span class="material-icons-outlined" style="cursor:pointer; font-size:20px; color:#94a3b8" onclick="triggerUpload('${eNo}', '${field}')">cloud_upload</span>`
+            }
+            ${isUploaded ? `<label style="cursor:pointer;"><input type="file" hidden onchange="uploadMultipleFiles(event, '${eNo}', '${field}')"><span class="material-icons-outlined" style="font-size:18px; color:#10b981">add</span></label>` : ''}
+        </div>
+    </div>`;
+}
+// For Office Documents (Read Only - NIT, Estimate)
+function renderStaticDoc(label, url, id, field) {
+    const hasFile = url && !url.includes('undefined');
+    
+    return `
+    <div class="doc-item ${hasFile ? 'uploaded' : ''}" style="border-color: #e2e8f0;">
+        <span class="doc-name">${label}</span>
+        ${hasFile ? `
+            <span class="material-icons-outlined doc-action-btn" onclick="handleFileAction('${url}')">visibility</span>
+        ` : `
+            <span class="material-icons-outlined doc-action-btn" style="opacity:0.3">visibility_off</span>
+        `}
+    </div>`;
+}
+function triggerUpload(eNo, field) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.pdf';
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Aapka existing upload logic yahan aayega
+            uploadFile(eNo, field, file); 
+        }
+    };
+    fileInput.click();
 }
 
-});
+function renderStaticDoc(name, url, tenderId, columnInTenderTable) {
+    const hasUrl = url && url !== "null" && url.trim() !== "";
+    
+    if (hasUrl) {
+        return `
+            <div class="doc-entry">
+                <div class="doc-icon-btn filled-doc" title="${name}">
+                    <a href="${url}" target="_blank" style="color:inherit; display:flex;">
+                        <span class="material-icons-outlined" style="font-size:18px">picture_as_pdf</span>
+                    </a>
+                </div>
+            </div>`;
+    } else {
+        // Agar document empty hai toh upload ka option dikhayenge
+        return `
+            <div class="doc-entry">
+                <div class="doc-icon-btn" title="Upload Missing ${name}" style="border: 1px dashed var(--primary); color: var(--primary);">
+                    <label style="margin:0; cursor:pointer; display:flex;">
+                        <input type="file" hidden onchange="uploadToTendersTable(event, '${tenderId}', '${columnInTenderTable}')">
+                        <span class="material-icons-outlined" style="font-size:18px">add_a_photo</span>
+                    </label>
+                </div>
+            </div>`;
+    }
+}
+async function uploadToTendersTable(event, tenderId, col) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-if(newRows.length===0){
-console.log("No new tender");
-return;
+    const fName = `manual_${tenderId}_${col}_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+
+    // 1. Storage (tender-files bucket) mein upload karein
+    const { error: uploadError } = await client.storage
+        .from("tender-files")
+        .upload(fName, file);
+
+    if (uploadError) {
+        showToast("Upload Failed: " + uploadError.message, "error");
+        return;
+    }
+
+    // 2. Tenders table ka column update karein (sirf file path store hota hai aapke logic ke hisaab se)
+    const { error: dbError } = await client
+        .from("tenders")
+        .update({ [col]: fName }) 
+        .eq("tender_id", tenderId);
+
+    if (!dbError) {
+        showToast(`${col} Updated Successfully!`);
+        loadWork(); // Refresh table to show the new link
+    } else {
+        showToast("Database Update Error", "error");
+    }
 }
 
-const {error}=await supabaseClient
-.from("work_on_hand")
-.insert(newRows);
+   function getUrl(path) {
+    if (!path || path === "undefined") return "";
+    // Agar path pehle se hi http se start ho raha hai toh wahi return karo
+    if (path.startsWith('http')) {
+        return path;
+    }
+    // Warna Supabase ka base URL append karo
+    const baseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co/storage/v1/object/public/work_on_hand_document/";
+    return baseUrl + path;
+}
+        function formatDate(date) { 
+            if(!date) return ""; 
+            const d = new Date(date); 
+            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; 
+        }
+        function formatDateInput(input){ 
+            let v = input.value.replace(/\D/g,''); 
+            if(v.length > 2) v = v.slice(0,2) + '/' + v.slice(2); 
+            if(v.length > 5) v = v.slice(0,5) + '/' + v.slice(5,9); 
+            input.value = v; 
+        }
+async function uploadFile(eNo, field, file) {
+    try {
+        const fileName = `${field}_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        
+        // 1. Storage mein upload
+        const { data, error: uploadError } = await client.storage
+            .from("work_on_hand_document")
+            .upload(fileName, file);
 
-if(error){
-console.log("Insert error:",error);
-}else{
-console.log("Saved");
+        if (uploadError) throw uploadError;
+
+        // 2. Database update (Sirf fileName save karein)
+        const { error: dbError } = await client
+            .from("work_on_hand")
+            .update({ [field]: fileName }) 
+            .eq("t_id", eNo);
+
+        if (dbError) throw dbError;
+
+        showToast(`${field.toUpperCase()} Uploaded!`);
+        loadWork(); // Table refresh
+    } catch (err) {
+        console.error("Upload Error:", err);
+        showToast("Upload Failed", "error");
+    }
+}
+async function generateHeaderItemTotals() { 
+    const { data } = await client.from("item_detail").select("item_name, quantity, unit"); 
+    
+    let grouped = {}; 
+    let rubberBlocksDetails = {
+        "65MM": { qty: 0, unit: "BRASS" },
+        "80MM": { qty: 0, unit: "BRASS" },
+        total: 0
+    };
+
+    data?.forEach(r => { 
+        const name = r.item_name || "";
+        const qty = Number(r.quantity) || 0;
+        const unit = r.unit || "";
+
+        if (name.includes("65 MM RUBBER BLOCK")) {
+            rubberBlocksDetails["65MM"].qty += qty;
+            rubberBlocksDetails["65MM"].unit = unit;
+            rubberBlocksDetails.total += qty;
+        } else if (name.includes("80 MM RUBBER BLOCK")) {
+            rubberBlocksDetails["80MM"].qty += qty;
+            rubberBlocksDetails["80MM"].unit = unit;
+            rubberBlocksDetails.total += qty;
+        } else {
+            const key = `${name} (${unit})`; 
+            grouped[key] = (grouped[key] || 0) + qty; 
+        }
+    }); 
+
+    let gridHTML = "";
+
+    if (rubberBlocksDetails.total > 0) {
+        gridHTML += `
+            <div class="stat-item special-card" style="border-left: 4px solid var(--primary); background: #f8f9ff; display: flex; flex-direction: column; justify-content: space-between; min-width: 220px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+                        <span>65MM BLOCK (${rubberBlocksDetails["65MM"].unit})</span>
+                        <b>${rubberBlocksDetails["65MM"].qty.toFixed(2)}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+                        <span>80MM BLOCK (${rubberBlocksDetails["80MM"].unit})</span>
+                        <b>${rubberBlocksDetails["80MM"].qty.toFixed(2)}</b>
+                    </div>
+                </div>
+                <div style="border-top: 1px dashed #ccc; margin-top: 8px; padding-top: 4px; display: flex; justify-content: space-between; align-items: baseline;">
+                    <label style="font-weight: bold; font-size: 11px; margin: 0;">TOTAL =</label>
+                    <span style="color: var(--primary); font-size: 16px; font-weight: 800;">${rubberBlocksDetails.total.toFixed(2)}</span>
+                </div>
+            </div>`;
+    }
+
+    gridHTML += Object.entries(grouped).map(([name, val]) => `
+        <div class="stat-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <label style="font-size: 11px;">${name}</label>
+            <span style="font-weight: bold;">${val.toFixed(2)}</span>
+        </div>`).join(""); 
+
+    document.getElementById("summaryGrid").innerHTML = gridHTML; 
 }
 
-}
-
-function showWork(result,tenderMap,workMap){
-
-const tbody=document.getElementById("workTable");
-tbody.innerHTML="";
-
-let totalAmount=0;
-
-result.forEach(row=>{
-
-const tender=tenderMap[row.tender_id];
-const work=workMap[getENumber(tender?.tender_notice_no)]||{};
-const notice=tender?.tender_notice_no;
-
-totalAmount+=Number(row.final_amount);
-
-tbody.innerHTML+=`
-
-<tr>
-
-<td>${getENumber(notice)}</td>
-<td>
-<input type="text"
-class="unique-name"
-placeholder="Enter Name"
-value="${work.uniq_name||""}"
-onchange="saveField('${getENumber(notice)}','uniq_name',this.value)">
-</td>
-
-<td class="name-work" title="${tender ? tender.department_name : ""}">
-${tender ? tender.department_name : ""}
-</td>
-
-<td class="name-work" title="${tender ? tender.name_of_work : ""}">
-${tender ? tender.name_of_work : ""}
-</td>
-<td>
-  <input type="text"
-class="unique-name"
-placeholder="Enter Name"
-value="${work.agreement_details||""}"
-onchange="saveField('${getENumber(notice)}','agreement_details',this.value)"></td>
-<td>${row.work_type}</td>
-
-<td>${tender ? tender.time_limit : ""}</td>
-<td class="amount">
-₹ ${Number(row.final_amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-</td>
-<td>
-<input type="number"
-value="${work.bg_etails||""}"
-onchange="saveField('${getENumber(notice)}','bg_etails',this.value)">
-</td>
-
-<td>
-<input type="number"
-value="${work.deposit_details||""}"
-onchange="saveField('${getENumber(notice)}','deposit_details',this.value)">
-</td>
-
-<td class="doc-cell">
-
-<div class="upload-wrapper">
-
-<input type="file"
-accept="application/pdf"
-id="file_${row.tender_id}"
-hidden
-onchange="uploadPDF(event,'${getENumber(notice)}',this)">
-
-${work.tender_document
-? `
-<div class="file-box">
-<a href="${work.tender_document}" target="_blank" class="file-name">
-${getFileName(work.tender_document)}
-</a>
-<span class="delete-file"
-onclick="deletePDF('${getENumber(notice)}')">✖</span>
-</div>
-`
-: `
-<label for="file_${row.tender_id}" class="upload-btn">
-Upload PDF
-</label>
-`
-}
-
-</div>
-
-</td>
-<td>
-
-<div id="itemList_${getENumber(notice)}" class="item-list"></div>
-
-<div class="item-input-row">
-
-<select id="item_${getENumber(notice)}" class="major-select">
-
-<option value="">Select Item</option>
-
-${majorItems.map(item => `
-<option value="${item.item_name}">
-${item.item_name}
-</option>
-`).join("")}
-
-<option value="add_new">+ Add New Item</option>
-
-</select>
-
-<input type="number"
-id="qty_${getENumber(notice)}"
-placeholder="Qty"
-class="qty-input">
-
-<select id="unit_${getENumber(notice)}" class="unit-select">
-
-<option value="BRASS">BRASS</option>
-<option value="NOS">NOS</option>
-<option value="MTR">MTR</option>
-
-</select>
-
-<button onclick="addItem('${getENumber(notice)}')" class="add-btn">+</button>
-
-</div>
-
-<td>
-
-<input type="text"
-class="date-input"
-placeholder="DD/MM/YYYY"
-maxlength="10"
-oninput="formatDateInput(this)"
-value="${work.work_start_date ? formatDate(work.work_start_date) : ""}"
-onchange="saveDate('${getENumber(notice)}',this.value)">
-
-</td>
-<td>
-<input type="text"
-class="date-input"
-placeholder="DD/MM/YYYY"
-maxlength="10"
-oninput="formatDateInput(this)"
-value="${work.work_end_date ? formatDate(work.work_end_date) : ""}"
-onchange="saveDate('${getENumber(notice)}',this.value)">
-</td>
-</tr>
-
-`;
-loadItems(getENumber(notice));
-
-});
-
-document.getElementById("totalTender").innerText=result.length;
-document.getElementById("totalAmount").innerText="₹ "+totalAmount.toLocaleString();
-loadItems(getENumber(notice));
-
-}
-function getFileName(url){
-if(!url) return "No file";
-
-const parts=url.split("/");
-return parts[parts.length-1];
-}
-function formatDateInput(input){
-
-let value = input.value.replace(/\D/g,'');
-
-if(value.length > 2 && value.length <= 4){
-value = value.slice(0,2) + "/" + value.slice(2);
-}
-else if(value.length > 4){
-value = value.slice(0,2) + "/" + value.slice(2,4) + "/" + value.slice(4,8);
-}
-
-input.value = value;
-
-}
-async function saveDate(tenderId,dateValue){
-
-if(!dateValue) return;
-
-const parts=dateValue.split("/");
-
-if(parts.length!==3){
-alert("Use DD/MM/YYYY format");
-return;
-}
-
-const day=parts[0];
-const month=parts[1];
-const year=parts[2];
-
-const formattedDate=`${year}-${month}-${day}`;
-const endDate=`${year}-${month}-${day}`;
-
-await supabaseClient
-.from("work_on_hand")
-.update({
-  work_start_date:formattedDate,
-work_end_date: endDate
-})
-.eq("t_id",tenderId);
-
-}
-let majorItems=[];
-
-async function loadMajorItems(){
-
-const {data,error}=await supabaseClient
-.from("major_item")
-.select("item_name");
-
-if(error){
-console.log(error);
-return;
-}
-
-majorItems=data;
-
-}
-async function saveMajorItem(e_no,value){
-
-if(value==="add_new"){
-
-let newItem = prompt("Enter New Major Item");
-
-if(!newItem) return;
-
-const {error}=await supabaseClient
-.from("major_item")
-.insert([{item_name:newItem}]);
-
-if(error){
-console.log(error);
-return;
-}
-
-/* dropdown reload */
-await loadMajorItems();
-await loadWork();
-
-}
-
-}
-async function loadItems(eNo){
-
-const {data,error} = await supabaseClient
-.from("item_detail")
-.select("*")
-.eq("t_id",eNo);
-
-if(error){
-console.log(error);
-return;
-}
-
-const list=document.getElementById(`itemList_${eNo}`);
-
-list.innerHTML="";
-
-data.forEach((row,i)=>{
-
-list.innerHTML+=`
-<div class="item-row">
-
-<span>${i+1}. ${row.item_name} ${row.quantity} ${row.unit}</span>
-
-<span class="delete-item"
-onclick="deleteItem(${row.id},'${eNo}')">❌</span>
-
-</div>
-`;
-
-});
-
-}
-async function deleteItem(id,eNo){
-
-const confirmDelete = confirm("Delete this item?");
-
-if(!confirmDelete) return;
-
-const {error}=await supabaseClient
-.from("item_detail")
-.delete()
-.eq("id",id);
-
-if(error){
-console.log(error);
-return;
-}
-
-loadItems(eNo);
-
-}
-function addItem(eNo){
-
-const item=document.getElementById(`item_${eNo}`).value;
-const qty=document.getElementById(`qty_${eNo}`).value;
-const unit=document.getElementById(`unit_${eNo}`).value;
-
-if(!item || !qty){
-alert("Select item and quantity");
-return;
-}
-
-saveItem(eNo,item,qty,unit);
-
-loadItems(eNo);
-
-}
-async function saveItem(tId,item,qty,unit){
-
-const {error} = await supabaseClient
-.from("item_detail")
-.insert({
-t_id:tId,
-item_name:item,
-quantity:qty,
-unit:unit
-});
-
-if(error){
-console.log(error);
-}else{
-console.log("Item Saved");
-}
-
-}
-function formatDate(date){
-
-const d=new Date(date);
-
-const day=String(d.getDate()).padStart(2,'0');
-const month=String(d.getMonth()+1).padStart(2,'0');
-const year=d.getFullYear();
-
-return `${day}/${month}/${year}`;
-
-}
-async function deletePDF(tenderId){
-
-const confirmDelete = confirm("Delete this document?");
-if(!confirmDelete) return;
-
-const {data} = await supabaseClient
-.from("work_on_hand")
-.select("tender_document")
-.eq("t_id",tenderId)
-.single();
-
-if(!data) return;
-
-const fileUrl = data.tender_document;
-const fileName = fileUrl.split("/").pop();
-
-/* delete from storage */
-
-await supabaseClient.storage
-.from("work_on_hand_document")
-.remove([fileName]);
-
-/* remove from database */
-
-await supabaseClient
-.from("work_on_hand")
-.update({tender_document:null})
-.eq("t_id",tenderId);
-
-/* reload UI */
-
-loadWork();
-}
-async function uploadPDF(event,tenderId,input){
-
-const file=input.files[0];
-if(!file) return;
-
-/* show file name */
-
-const fileNameSpan=input.parentElement.querySelector(".file-name");
-fileNameSpan.textContent=file.name;
-
-/* upload */
-
-const fileName=`${tenderId}_${Date.now()}.pdf`;
-
-const {error}=await supabaseClient.storage
-.from("work_on_hand_document")
-.upload(fileName,file);
-
-if(error){
-console.log("Upload error:",error);
-return;
-}
-
-const {data:urlData}=supabaseClient.storage
-.from("work_on_hand_document")
-.getPublicUrl(fileName);
-
-await supabaseClient
-.from("work_on_hand")
-.update({tender_document:urlData.publicUrl})
-.eq("t_id",tenderId);
-
-}
-
-async function saveField(tenderId,column,value){
-
-console.log("Updating:",tenderId,column,value);
-
-const updateData = {};
-updateData[column] = value;
-
-const {data,error} = await supabaseClient
-.from("work_on_hand")
-.update(updateData)
-.eq("t_id",tenderId)
-.select();
-
-if(error){
-console.error("Update error:",error);
-}else{
-console.log("Updated:",data);
-}
-
-}
-
-async function startPage(){
-
-await loadMajorItems();
-await loadWork();
-
-}
-
-startPage();
-
-</script>
+        init();
+    </script>
+</body>
+</html>

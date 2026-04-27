@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tender EMD & Fee Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family:'Baloo Bhai 2', Arial; background:#eef2f7; padding:40px; }
+        .container { width: 950px; margin:auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        table { width:100%; border-collapse:collapse; margin-top: 20px; }
+        th { background:#1b4a6b; color:white; padding:12px; }
+        td { padding:10px; border-bottom:1px solid #ccc; text-align:center; font-size: 14px; }
+        .btn-gen { background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; float: right; font-weight: bold; }
+        .btn-gen:hover { background: #218838; }
+        input[type="date"] { padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .status-badge { background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .back-btn {
+    background: white;
+    color: #475569; /* Slate grey color */
+    border: 1px solid #e2e8f0; /* Subtle light border */
+    padding: 8px 16px;
+    border-radius: 8px; /* Rounded corners */
+    font-size: 14px;
+    font-weight: 550;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Light shadow */
+}
+
+.back-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b; /* Hover par thoda dark text */
+}
+
+.back-btn i {
+    font-size: 16px;
+    color: #64748b; /* Icon color slightly lighter */
+}
+/* Header alignment styling */
+.header-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Button aur Title ke beech ka gap */
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+h2 { 
+    margin: 0; /* Extra margin hata diya */
+    flex-grow: 1; /* Title ko space cover karne dega taki button right mein rahe */
+    display: flex;
+    align-items: center;
+}
+
+/* Button position adjust karne ke liye */
+.btn-gen {
+    margin-left: auto; 
+}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-wrapper">
+        <button class="back-btn" onclick="window.location.href='dashboard.html'">
+            <i class="fa-solid fa-arrow-left"></i> Dashboard
+        </button>
+        
+        <h2>🏆 Tender EMD AND FEE Management</h2>
+        
+        <button class="btn-gen" onclick="generateSelectedLetter()">
+            <i class="fa-solid fa-file-lines"></i> Generate Letter (Selected)
+        </button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Sr No</th>
+                <th>Tender ID</th>
+                <th>Work Name</th> <th>EMD Amount</th>
+                <th>Fee</th>
+                 <th>Department name</th>
+                <th>Release Date (Action)</th>
+                    <th>Reference date</th>
+                   
+            </tr>
+        </thead>
+        <tbody id="awardTable">
+            <tr><td colspan="7">Loading data...</td></tr>
+        </tbody>
+    </table>
+</div>
+<script src="./supabse.js"></script>
+<script>
+   
+    async function loadAwarded() {
+        console.log("Fetching tenders from Supabase...");
+        const {data, error} = await client
+            .from("tenders")
+            .select("*")
+            .is("release_date", null) 
+            .order("created_at", {ascending: false});
+
+        if (error) {
+            console.error("Supabase Error:", error);
+            return;
+        }
+
+        const table = document.getElementById("awardTable");
+        table.innerHTML = "";
+        
+        if (data.length === 0) {
+            table.innerHTML = "<tr><td colspan='7'>No pending tenders found.</td></tr>";
+            return;
+        }
+
+       
+data.forEach((row, index) => {
+    const rowData = JSON.stringify(row).replace(/'/g, "&apos;");
+    
+    table.innerHTML += `
+        <tr>
+            <td><input type="checkbox" class="tender-check" value='${rowData}'></td>
+            <td>${index + 1}</td>
+            <td><b>${row.tender_id || 'N/A'}</b></td>
+            <td style="text-align:left; font-size:12px;">${row.name_of_work || 'N/A'}</td>
+            <td>₹${row.emd_amount || '0'}</td>
+            <td>₹${row.fee_amount || '0'}</td>
+            <td>${row.department_name || 'N/A'}</td>
+                    <td>
+                        <input type="date" onchange="removeTender('${row.id}', this.value)">
+                    </td>
+                    <td>
+                <input type="date" 
+                       value="${row.reference_date || ''}" 
+                       onchange="updateReferenceDate('${row.id}', this.value)">
+            </td>
+                </tr>
+            `;
+});}
+async function updateReferenceDate(id, dateValue) {
+    if(!dateValue) return;
+
+    const { error } = await client
+        .from("tenders")
+        .update({ reference_date: dateValue })
+        .eq('id', id);
+    
+    if(error) {
+        showToast("Error: " + error.message);
+        document.getElementById("toast").style.backgroundColor = "#dc3545"; // Red for error
+    } else {
+        // Success Toast
+        showToast("Reference Date Updated Successfully!");
+        document.getElementById("toast").style.backgroundColor = "#28a745"; // Green for success
+    }
+}
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.innerText = "✅ " + message;
+    toast.style.visibility = "visible";
+    
+    // 3 second baad apne aap gayab ho jayega
+    setTimeout(function(){ 
+        toast.style.visibility = "hidden"; 
+    }, 3000);
+}
+    async function removeTender(id, date) {
+        if(!date) return;
+        if(!confirm("Are you sure you want to set release date and remove this from list?")) return;
+
+        const { error } = await client
+            .from("tenders")
+            .update({ release_date: date })
+            .eq('id', id);
+        
+        if(!error) {
+            alert("Updated successfully!");
+            loadAwarded(); 
+        } else {
+            alert("Error updating: " + error.message);
+        }
+    }
+
+    function generateSelectedLetter() {
+        const selectedTenders = [];
+        const checkboxes = document.querySelectorAll('.tender-check:checked');
+
+        if (checkboxes.length === 0) {
+            alert("Please select at least one tender to generate the letter!");
+            return;
+        }
+
+        checkboxes.forEach((cb) => {
+            // JSON string ko wapas object mein convert kar rahe hain
+            const row = JSON.parse(cb.value);
+            
+            selectedTenders.push({
+                tender_id: row.tender_id,
+                name_of_work: row.name_of_work,
+                emd_amount: row.emd_amount,
+                emd_no: row.emd_no || row.emd_receipt_no || "N/A", // Column names mismatch solve
+                emd_date: row.emd_date || row.submission_date || ""
+            });
+        });
+
+        console.log("Selected Data for Letter:", selectedTenders);
+        localStorage.setItem("selectedForLetter", JSON.stringify(selectedTenders));
+        
+        // Letter page par redirect karein
+        window.location.href = 'letter_page.html'; 
+    }
+
+    // Initial load
+    loadAwarded();
+</script>
+</body>
+</html>

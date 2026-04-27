@@ -200,7 +200,7 @@ button:hover{
   </div>
 <div class="form-group file-box">
   <label>Estimate Sheet</label>
-  <input type="file" name="estimantlink">
+<input type="file" name="estimateDocument">
 </div>
 
   <div class="form-group file-box">
@@ -218,16 +218,13 @@ button:hover{
   
 </form>
 </div>
-
+<script src="./supabse.js"></script>
 
 <script>
   const params = new URLSearchParams(window.location.search);
 const editId = params.get("id");
 
-const supabaseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmcXFkaWVydmpkd29wanR5cW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjU4OTUsImV4cCI6MjA4NzUwMTg5NX0.pN-e2l-yDyFUGWJxyYn6w7VlKBPr6UVGeE9O-DLyy4M";
 
-  const client = window.supabase.createClient(supabaseUrl, supabaseKey);
 document.getElementById("tenderForm").addEventListener("submit", async function(e){
 
     e.preventDefault();
@@ -265,7 +262,7 @@ async function uploadFile(fileInput, fileLabel) {
 }
 
         const nitPath = await uploadFile(form.tenderNIT, "nit");
-        const estimatePath = await uploadFile(form.estimateDocument, "estimate");
+      const estimatePath = await uploadFile(form.estimateDocument, "estimate");
         const calculationPath = await uploadFile(form.tenderCalculation, "calculation");
         const otherPath = await uploadFile(form.otherDocument, "other");
   let lastDateInput = document.getElementById("last_date").value;
@@ -281,13 +278,14 @@ async function uploadFile(fileInput, fileLabel) {
             time_limit: form.timeLimit.value,
            fee_amount: form.feeAmount.value,
              emd_amount: form.emdAmount.value,
-            tender_estimant_link: form.estimantlink.value || null,
+        
           last_date: lastDateDB,
           department_name: form.departmentName.value,
         };
 
         // 🔥 If new files uploaded, add to object
         if(nitPath) tenderData.tender_nit = nitPath;
+        if(estimatePath) tenderData.estimate_document = estimatePath; 
         
         if(calculationPath) tenderData.tender_calculation = calculationPath;
         if(otherPath) tenderData.other_document = otherPath;
@@ -352,7 +350,7 @@ form.workType.value = data.work_type || "";
   form.feeAmount.value = data.fee_amount || "";
   
   form.emdAmount.value = data.emd_amount || "";
-  form.estimantlink.value = data.tender_estimant_link || "";
+ 
   form.departmentName.value=data.department_name ||"";
 
   /* 🔹 Convert DB date → DD-Mon-YYYY */
@@ -377,23 +375,17 @@ form.workType.value = data.work_type || "";
 
   document.getElementById("submitBtn").innerText = "Update Tender";
 }
+function getPublicURL(path){
+  if(!path) return null;
+
+  return `https://dfqqdiervjdwopjtyqmu.supabase.co/storage/v1/object/public/tender-files/${path}`;
+}
 
 loadTenderForEdit();
 
 
-const select = document.getElementById("workType");
 
 
-select.addEventListener("change", function(){
-
-if(this.value === "add_new"){
-input.style.display = "block";
-input.focus();
-}else{
-input.style.display = "none";
-}
-
-});
 
 
 function convertToDBDate(dateStr){
@@ -458,28 +450,50 @@ if(this.value === "add_new"){
 
 let newType = prompt("Enter New Work Type");
 
-if(newType){
+// ❗ cancel ya empty
+if(!newType){
+  this.value = "";
+  return;
+}
 
+newType = newType.trim();
+
+// 🔥 duplicate check
+const { data: existing } = await client
+.from("work_type")
+.select("work_name")
+.ilike("work_name", newType);
+
+if(existing.length){
+alert("Work Type already exists");
+this.value = "";
+return;
+}
+
+// 🔥 insert
 const { error } = await client
 .from("work_type")
 .insert([{ work_name:newType }]);
 
 if(error){
 alert(error.message);
+this.value = "";
 return;
 }
 
 await loadWorkTypes();
 
+// auto select new value
 setTimeout(()=>{
 document.getElementById("workType").value = newType;
 },200);
 
 }
 
-}
-
 });
+
+
+
 </script>
 </body>
 </html>

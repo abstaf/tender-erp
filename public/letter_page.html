@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <title>Aniraj Builders - Official EMD Letter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Mukta+Vaani:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #f0f0f0; font-family: 'Mukta Vaani', sans-serif; margin: 0; padding: 0; }
+        
+        .page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            margin: 10px auto;
+            position: relative;
+            display: flex;
+            flex-direction: column; /* Vertical structure */
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header-img { width: 100%; display: block; flex-shrink: 0; }
+        .footer-img { width: 100%; display: block; flex-shrink: 0; margin-top: auto; }
+
+        /* Main Container for Text and Table */
+        .content-wrap {
+            padding: 0 55px;
+            display: flex;
+            flex-direction: column;
+            flex: 1; /* Occupies remaining space between header & footer */
+            overflow: hidden;
+        }
+
+        .date-line { text-align: right; margin-top: 5px; font-weight: bold; font-size: 15px; }
+        .date-line input { border: none; border-bottom: 1px dotted #000; width: 120px; text-align: center; font-family: inherit; outline: none; }
+
+        .address { margin: 10px 0; line-height: 1.3; font-size: 15px;  }
+        .subject { text-align: center; font-weight: 700; margin: 15px 0; font-size: 17px; }
+
+        /* Paragraph: Fixed above table */
+ .letter-body { 
+    margin-top: 20px;
+    margin-bottom: 1.5px; 
+    line-height: 1.8; /* Lines ke beech ka gap */
+    font-size: 16px; 
+    text-align: justify; /* Text dono taraf se barabar dikhega */
+    text-indent: 50px; /* Paragraph ki pehli line thodi aage se shuru hogi */
+    white-space: normal; /* Extra spaces ko handle karega */
+}
+
+      
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        table, th, td { border: 1px solid black; }
+        th { background-color: #f8f8f8; padding: 4px; font-size: 12px; font-weight: 700; }
+        td { padding: 4px; vertical-align: top; font-weight: 500; font-size: 12px; }
+        
+        .inp-field { 
+            width: 100%; border: none; font-size: 12px; outline: none; 
+            background: transparent; font-family: 'Mukta Vaani', sans-serif;
+            resize: none; display: block; overflow: hidden;
+        }
+
+     
+        .closing-text { font-weight: 400; font-size: 15px; margin-bottom: 5px; }
+       .sign-box {
+    position: absolute;
+    right: 50px;   /* right gap */
+    bottom: 80px;  /* niche position */
+    text-align: right;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+        /* Controls */
+        .controls { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #007bff; }
+        .btn-print { background: #28a745; }
+        .del-btn { color: red; border: none; background: none; cursor: pointer; font-size: 12px; }
+
+        @media print {
+            body { background: none; }
+            .page { margin: 0; box-shadow: none; height: 297mm; }
+            .controls, .del-btn { display: none !important; }
+            .inp-field { border: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <button class="btn btn-add" onclick="addRow()">+ Add Row</button>
+    <button class="btn btn-print" onclick="window.print()">Print Letter</button>
+    <button class="btn" style="background:#6c757d" onclick="location.reload()">Reset/Refresh</button>
+</div>
+
+<div class="page">
+    <img src="images/header.png" alt="Header" class="header-img">
+
+    <div class="content-wrap">
+        <div class="date-line">
+            તા. <input type="text" id="currentDate">
+        </div>
+
+        <div class="address">
+            પ્રતિ શ્રી,<br>
+            કાર્યપાલક ઈજનેર,<br>
+            વોટર વર્કસ વિભાગ,<br>
+            ભાવનગર મહાનગરપાલિકા,
+        </div>
+
+        <p class="letter-body">વિષય : Tender ની EMD રીલીઝ કરવા બાબત</p>
+
+        <p class="letter-body">
+          મહેરબાન સાહેબ શ્રી, જય ભારત સાથે જણાવવાનું કે ટેન્ડરીંગ પ્રક્રિયા દરમિયાન ટેન્ડર ડોક્યુમેન્ટ્સમાં અમારા દ્વારા સબમિટ કરવામાં આવેલ EMD રીલીઝ કરવા આપ સાહેબને વિનંતી છે. ટેન્ડર કામનું નામ અને રીલીઝ કરવાની થતી EMDની માહિતી નીચે મુજબ છે.
+    
+        </p>
+  <p class="letter-body">
+           ટેન્ડર કામનું નામ અને રીલીઝ કરવાની થતી EMDની માહિતી નીચે મુજબ છે.
+
+        </p>
+        <div class="table-container">
+            <table id="tenderTable">
+                <thead>
+                    <tr>
+                        <th width="8%">ક્રમ</th>
+                        <th width="15%">ટેન્ડર ID</th>
+                        <th>કામનું નામ</th>
+                        <th width="35%">EMD વિગત</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+          <div class="signature-section">
+         <p class="letter-body">
+  આપ સાહેબથી સહકારની આશા રાખીએ છીએ.
+        </p> </div>
+        
+       
+        <div class="sign-box">
+        <br><br><br>
+            <strong>અનીરાજ બિલ્ડર્સ,</strong><br>
+            ભાવનગર
+        </div>
+    </div>
+
+    <img src="images/footer.png" alt="Footer" class="footer-img">
+</div>
+
+<script>
+    window.onload = function() {
+        console.log("Checking for data in localStorage...");
+        const rawData = localStorage.getItem("selectedForLetter");
+        
+        // Debugging: Console mein check karein data aa raha hai ya nahi
+        console.log("Raw Storage Data:", rawData);
+
+        const tableBody = document.querySelector("#tenderTable tbody");
+
+        if (rawData && rawData !== "[]") {
+            try {
+                const selectedTenders = JSON.parse(rawData);
+                tableBody.innerHTML = ""; // Clear existing rows
+
+                selectedTenders.forEach((t, index) => {
+                    console.log(`Processing Row ${index + 1}:`, t);
+                    
+                    const row = tableBody.insertRow();
+                    // Mapping columns based on your DB: name_of_work, emd_no, emd_amount
+                    row.innerHTML = `
+                        <td align="center">
+                            <span>${index + 1}</span><br>
+                            <button class="del-btn" onclick="removeRow(this)">✖</button>
+                        </td>
+                        <td><input class="inp-field" type="text" value="${t.tender_id || t.id || ''}"></td>
+                        <td><textarea class="inp-field" rows="3" oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'">${t.name_of_work || 'N/A'}</textarea></td>
+                        <td>
+                            No.: <input class="inp-field" style="display:inline; width:70%" type="text" value="${t.emd_no || ''}"><br>
+                            Amnt: <input class="inp-field" style="display:inline; width:70%" type="text" value="${t.emd_amount || ''} /-"><br>
+                            Date: <input class="inp-field" style="display:inline; width:70%" type="text" value="${t.emd_date || ''}">
+                        </td>
+                    `;
+                });
+                console.log("All rows injected successfully.");
+            } catch (e) {
+                console.error("Error parsing JSON data:", e);
+                alert("Data load karne mein problem hui!");
+            }
+        } else {
+            console.warn("No data selected. Adding an empty row for manual entry.");
+            addRow(); 
+        }
+
+        // Auto-set Date
+        const today = new Date();
+        const dateStr = today.getDate().toString().padStart(2, '0') + " / " + 
+                        (today.getMonth() + 1).toString().padStart(2, '0') + " / " + 
+                        today.getFullYear();
+        document.getElementById("currentDate").value = dateStr;
+    };
+
+    function addRow() {
+        const tableBody = document.querySelector("#tenderTable tbody");
+        const rowCount = tableBody.rows.length;
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td align="center">
+                <span>${rowCount + 1}</span><br>
+                <button class="del-btn" onclick="removeRow(this)">✖</button>
+            </td>
+            <td><input class="inp-field" type="text" placeholder="ID"></td>
+            <td><textarea class="inp-field" rows="2" placeholder="કામનું નામ લખો..."></textarea></td>
+            <td>
+                No.: <input class="inp-field" style="display:inline; width:70%" type="text" placeholder="Check No."><br>
+                Amnt: <input class="inp-field" style="display:inline; width:70%" type="text" placeholder="Amount"><br>
+                Date: <input class="inp-field" style="display:inline; width:70%" type="text" placeholder="DD-MM-YYYY">
+            </td>
+        `;
+    }
+
+    function removeRow(btn) {
+        if(confirm("Are you sure you want to remove this row?")) {
+            btn.closest('tr').remove();
+            updateIds();
+        }
+    }
+
+    function updateIds() {
+        const rows = document.querySelectorAll("#tenderTable tbody tr");
+        rows.forEach((row, index) => {
+            row.cells[0].querySelector('span').textContent = index + 1;
+        });
+    }
+</script>
+</body>
+</html>

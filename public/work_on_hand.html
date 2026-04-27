@@ -135,7 +135,7 @@
 
         .modern-doc-stack { display: flex; gap: 5px; align-items: center; justify-content: center; }
         .doc-icon-btn { 
-            width: 32px; height: 32px; border-radius: 6px; 
+            width: 62px; height: 32px; border-radius: 6px; 
             background: #f1f5f9; border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
             transition: 0.2s; color: var(--secondary); cursor: pointer;
@@ -421,9 +421,9 @@ async function loadWork() {
                     <div>
                         <label style="font-size:10px; font-weight:800; color:var(--secondary); display:block; margin-bottom:10px;">OFFICE DOCUMENTS (READ ONLY)</label>
                         <div class="modern-doc-stack">
-                            ${renderStaticDoc('NIT', getUrl(tender?.tender_nit), row.tender_id, 'tender_nit')}
-                            ${renderStaticDoc('Estimate', getUrl(tender?.estimate_document), row.tender_id, 'estimate_document')}
-                            ${renderStaticDoc('Other', getUrl(tender?.other_document), row.tender_id, 'other_document')}
+                            ${renderOfficeDoc('NIT', getUrl(tender?.tender_nit), row.tender_id, 'tender_nit')}
+                            ${renderOfficeDoc('Estimate', getUrl(tender?.estimate_document), row.tender_id, 'estimate_document')}
+                            ${renderOfficeDoc('Other', getUrl(tender?.other_document), row.tender_id, 'other_document')}
                         </div>
                     </div>
                     <div style="width: 1px; background: var(--border);"></div>
@@ -713,7 +713,39 @@ function triggerUpload(eNo, field) {
     };
     fileInput.click();
 }
+// Dedicated Function for Office Documents (Read Only / Upload if missing)
+function renderOfficeDoc(label, fileName, tenderId, colName) {
+    // Sahi URL generate karein
+    const fileUrl = getUrl(fileName);
+    const hasFile = fileName && fileName !== "null" && fileName !== "undefined" && fileName.trim() !== "";
 
+    if (hasFile) {
+        // Agar file hai toh sirf "View" button dikhayega
+        return `
+            <div class="doc-entry">
+                <div class="doc-icon-btn filled-doc" title="View ${label}" 
+                     style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; cursor: pointer; padding: 5px; border-radius: 8px;">
+                    <a href="${fileUrl}" target="_blank" style="color:inherit; display:flex; align-items:center; text-decoration:none; gap:5px;">
+                        <span class="material-icons-outlined" style="font-size:18px">visibility</span>
+                        <span style="font-size:10px; font-weight:700;">${label}</span>
+                    </a>
+                </div>
+            </div>`;
+    } else {
+        // Agar file null hai toh "Upload" option dikhayenge
+        return `
+            <div class="doc-entry">
+                <div class="doc-icon-btn" title="Upload Missing ${label}" 
+                     style="border: 1px dashed var(--primary); color: var(--primary); padding: 5px; border-radius: 8px; cursor: pointer;">
+                    <label style="margin:0; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="file" hidden onchange="uploadToTendersTable(event, '${tenderId}', '${colName}')">
+                        <span class="material-icons-outlined" style="font-size:18px">add_a_photo</span>
+                        <span style="font-size:10px; font-weight:700;">${label}</span>
+                    </label>
+                </div>
+            </div>`;
+    }
+}
 function renderStaticDoc(name, url, tenderId, columnInTenderTable) {
     const hasUrl = url && url !== "null" && url.trim() !== "";
     
@@ -769,14 +801,19 @@ async function uploadToTendersTable(event, tenderId, col) {
     }
 }
 
-   function getUrl(path) {
-    if (!path || path === "undefined") return "";
+  function getUrl(path) {
+    if (!path || path === "null" || path === "undefined") return "";
+    
     // Agar path pehle se hi http se start ho raha hai toh wahi return karo
     if (path.startsWith('http')) {
         return path;
     }
-    // Warna Supabase ka base URL append karo
-    const baseUrl = "https://dfqqdiervjdwopjtyqmu.supabase.co/storage/v1/object/public/work_on_hand_document/";
+
+    // Logic: Agar file 'manual_' se start ho rahi hai toh 'tender-files' bucket use karo
+    // Warna default 'work_on_hand_document' use karo
+    const bucket = path.startsWith('manual_') ? 'tender-files' : 'work_on_hand_document';
+    
+    const baseUrl = `https://dfqqdiervjdwopjtyqmu.supabase.co/storage/v1/object/public/${bucket}/`;
     return baseUrl + path;
 }
         function formatDate(date) { 

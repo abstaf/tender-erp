@@ -512,21 +512,25 @@ async function uploadMultipleFiles(event, id, col) {
         loadWork(); // Table refresh
     }
 }
-     async function saveField(id, col, val) { 
+async function saveField(id, col, val) { 
+    // Fix: Agar value empty string hai, toh use null bhejein 
+    // taaki database numeric error na de
+    const finalVal = val.trim() === "" ? null : val;
+
     const { error } = await client
         .from("work_on_hand")
         .upsert(
-            { t_id: id, [col]: val }, 
-            { onConflict: 't_id' } // Yeh ensure karta hai ki agar t_id exists hai to update kare
+            { t_id: id, [col]: finalVal }, 
+            { onConflict: 't_id' }
         ); 
 
     if(!error) {
         showToast("Field Updated!");
-        // Data update hone ke baad header totals refresh karein agar zaroorat ho
         if(col === 'final_amount') loadWork(); 
     } else {
         console.error("Supabase Error:", error);
-        showToast("Error: " + error.message, "error");
+        // User ko clear message dikhane ke liye
+        showToast("Update Failed: " + error.details || error.message, "error");
     }
 }
      async function saveDate(id, val, type) { 
